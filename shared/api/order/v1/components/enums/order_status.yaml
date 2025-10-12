@@ -1,0 +1,9 @@
+type: string
+description: Current status of the order
+enum:
+  - UNKNOWN
+  - PENDING_PAYMENT
+  - PAID
+  - CANCELLED
+  - ASSEMBLED
+example: PENDING_PAYMENT

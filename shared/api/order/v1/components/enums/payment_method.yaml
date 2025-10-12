@@ -1,0 +1,9 @@
+type: string
+description: Payment method used for the order
+enum:
+  - UNKNOWN
+  - CARD
+  - SBP
+  - CREDIT_CARD
+  - INVESTOR_MONEY
+example: CARD
