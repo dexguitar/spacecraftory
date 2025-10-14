@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"sync"
 	"syscall"
 	"time"
@@ -39,7 +40,6 @@ type inventoryService struct {
 	parts map[string]*inventoryV1.Part
 }
 
-// GetPart returns a part by UUID
 func (s *inventoryService) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*inventoryV1.GetPartResponse, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -54,7 +54,6 @@ func (s *inventoryService) GetPart(ctx context.Context, req *inventoryV1.GetPart
 	}, nil
 }
 
-// ListParts returns a list of parts with optional filters
 func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListPartsRequest) (*inventoryV1.ListPartsResponse, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -81,7 +80,6 @@ func (s *inventoryService) ListParts(ctx context.Context, req *inventoryV1.ListP
 	}, nil
 }
 
-// getAllParts returns all parts from the inventory
 func (s *inventoryService) getAllParts() []*inventoryV1.Part {
 	parts := make([]*inventoryV1.Part, 0, len(s.parts))
 	for _, part := range s.parts {
@@ -90,7 +88,6 @@ func (s *inventoryService) getAllParts() []*inventoryV1.Part {
 	return parts
 }
 
-// getPartsByUUIDs returns parts matching the given UUIDs
 func (s *inventoryService) getPartsByUUIDs(uuids []string) []*inventoryV1.Part {
 	parts := make([]*inventoryV1.Part, 0, len(uuids))
 	for _, uuid := range uuids {
@@ -101,7 +98,6 @@ func (s *inventoryService) getPartsByUUIDs(uuids []string) []*inventoryV1.Part {
 	return parts
 }
 
-// filterParts applies filters to parts and returns matching parts
 func (s *inventoryService) filterParts(filter *inventoryV1.PartsFilter) []*inventoryV1.Part {
 	parts := make([]*inventoryV1.Part, 0)
 	for _, part := range s.parts {
@@ -112,7 +108,6 @@ func (s *inventoryService) filterParts(filter *inventoryV1.PartsFilter) []*inven
 	return parts
 }
 
-// partMatchesFilter checks if a part matches all filter criteria
 func (s *inventoryService) partMatchesFilter(part *inventoryV1.Part, filter *inventoryV1.PartsFilter) bool {
 	return s.matchesNameFilter(part, filter.GetNames()) &&
 		s.matchesCategoryFilter(part, filter.GetCategories()) &&
@@ -125,12 +120,7 @@ func (s *inventoryService) matchesNameFilter(part *inventoryV1.Part, names []str
 	if len(names) == 0 {
 		return true
 	}
-	for _, name := range names {
-		if part.GetName() == name {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(names, part.GetName())
 }
 
 // matchesCategoryFilter checks if a part matches the category filter
@@ -138,12 +128,7 @@ func (s *inventoryService) matchesCategoryFilter(part *inventoryV1.Part, categor
 	if len(categories) == 0 {
 		return true
 	}
-	for _, category := range categories {
-		if part.GetCategory() == category {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(categories, part.GetCategory())
 }
 
 // matchesCountryFilter checks if a part matches the manufacturer country filter
@@ -151,12 +136,7 @@ func (s *inventoryService) matchesCountryFilter(part *inventoryV1.Part, countrie
 	if len(countries) == 0 {
 		return true
 	}
-	for _, country := range countries {
-		if part.GetManufacturer().GetCountry() == country {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(countries, part.GetManufacturer().GetCountry())
 }
 
 // matchesTagFilter checks if a part matches the tag filter
@@ -164,24 +144,15 @@ func (s *inventoryService) matchesTagFilter(part *inventoryV1.Part, filterTags [
 	if len(filterTags) == 0 {
 		return true
 	}
-	for _, filterTag := range filterTags {
-		for _, partTag := range part.GetTags() {
-			if partTag == filterTag {
-				return true
-			}
-		}
-	}
-	return false
+	return slices.ContainsFunc(part.GetTags(), func(tag string) bool {
+		return slices.Contains(filterTags, tag)
+	})
 }
 
 // initializeMockData creates some initial parts for testing
 func initializeMockData() map[string]*inventoryV1.Part {
-	parts := make(map[string]*inventoryV1.Part)
-
-	// Create some sample parts
-	mockParts := []*inventoryV1.Part{
-		{
-			Uuid:          uuid.NewString(),
+	mockParts := map[string]*inventoryV1.Part{
+		uuid.NewString(): {
 			Name:          "Quantum Drive Engine",
 			Description:   "High-efficiency quantum propulsion engine for interstellar travel",
 			Price:         150000.00,
@@ -202,8 +173,7 @@ func initializeMockData() map[string]*inventoryV1.Part {
 			CreatedAt: timestamppb.New(time.Now()),
 			UpdatedAt: timestamppb.New(time.Now()),
 		},
-		{
-			Uuid:          uuid.NewString(),
+		uuid.NewString(): {
 			Name:          "Fusion Fuel Cell",
 			Description:   "Advanced fusion-based fuel cell for long-duration missions",
 			Price:         75000.00,
@@ -224,8 +194,7 @@ func initializeMockData() map[string]*inventoryV1.Part {
 			CreatedAt: timestamppb.New(time.Now()),
 			UpdatedAt: timestamppb.New(time.Now()),
 		},
-		{
-			Uuid:          uuid.NewString(),
+		uuid.NewString(): {
 			Name:          "Reinforced Porthole",
 			Description:   "Triple-layered reinforced viewing porthole for crew observation",
 			Price:         25000.00,
@@ -246,8 +215,7 @@ func initializeMockData() map[string]*inventoryV1.Part {
 			CreatedAt: timestamppb.New(time.Now()),
 			UpdatedAt: timestamppb.New(time.Now()),
 		},
-		{
-			Uuid:          uuid.NewString(),
+		uuid.NewString(): {
 			Name:          "Aerodynamic Wing Panel",
 			Description:   "Carbon-fiber composite wing panel for atmospheric re-entry",
 			Price:         45000.00,
@@ -270,12 +238,7 @@ func initializeMockData() map[string]*inventoryV1.Part {
 		},
 	}
 
-	for _, part := range mockParts {
-		parts[part.Uuid] = part
-		log.Printf("Initialized part: %s (UUID: %s)", part.Name, part.Uuid)
-	}
-
-	return parts
+	return mockParts
 }
 
 func main() {
@@ -290,24 +253,19 @@ func main() {
 		}
 	}()
 
-	// Create gRPC server
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(interceptor.ValidationInterceptor()),
 	)
 
-	// Register our service with mock data
+	// Enable reflection for debugging
+	reflection.Register(s)
+
+	// Register service with mock data
 	service := &inventoryService{
 		parts: initializeMockData(),
 	}
 
-	for _, part := range service.parts {
-		log.Printf("Part: %+v", part)
-	}
-
 	inventoryV1.RegisterInventoryServiceServer(s, service)
-
-	// Enable reflection for debugging
-	reflection.Register(s)
 
 	go func() {
 		log.Printf("🚀 Inventory gRPC server listening on port %d\n", grpcPort)
@@ -321,11 +279,10 @@ func main() {
 	// Launch HTTP server with gRPC gateway
 	var gwServer *http.Server
 	go func() {
-		// Create context with cancel
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 
-		// Create new serve mux for HTTP requests
+		// Create new serve mux for HTTP requests with dial
 		mux := runtime.NewServeMux()
 
 		// Create new dial options for HTTP requests

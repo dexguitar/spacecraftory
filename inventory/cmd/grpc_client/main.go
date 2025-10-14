@@ -12,7 +12,6 @@ import (
 
 const serverAddress = "localhost:50051"
 
-// listParts lists all parts
 func listParts(ctx context.Context, client inventoryV1.InventoryServiceClient, filters *inventoryV1.PartsFilter) ([]*inventoryV1.Part, error) {
 	resp, err := client.ListParts(ctx, &inventoryV1.ListPartsRequest{Filter: filters})
 	if err != nil {
@@ -22,7 +21,6 @@ func listParts(ctx context.Context, client inventoryV1.InventoryServiceClient, f
 	return resp.Parts, nil
 }
 
-// getPart gets a part by UUID
 func getPart(ctx context.Context, client inventoryV1.InventoryServiceClient, uuid string) (*inventoryV1.Part, error) {
 	resp, err := client.GetPart(ctx, &inventoryV1.GetPartRequest{Uuid: uuid})
 	if err != nil {
@@ -49,13 +47,11 @@ func main() {
 		}
 	}()
 
-	// Create gRPC client
 	client := inventoryV1.NewInventoryServiceClient(conn)
 
 	log.Println("=== Testing Inventory API ===")
 	log.Println()
 
-	// 1. List all parts with no filters
 	log.Println("🪛 Fetching parts with no filters")
 	log.Println("===========================")
 	parts, err := listParts(ctx, client, nil)
@@ -64,10 +60,8 @@ func main() {
 		return
 	}
 
-	// Print parts
 	log.Printf("Fetched %d parts: %v\n", len(parts), parts)
 
-	// 2. Get each part's information by uuid
 	log.Println("🔍 Getting each part's information by uuid")
 	log.Println("==================================")
 

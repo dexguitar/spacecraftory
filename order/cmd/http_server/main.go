@@ -34,46 +34,53 @@ const (
 	shutdownTimeout   = 10 * time.Second
 )
 
+var (
+	ErrOrderNotFound      = errors.New("order not found")
+	ErrOrderAlreadyExists = errors.New("order already exists")
+)
+
 // OrderStorage represents a thread-safe storage for order data
 type OrderStorage struct {
 	mu     sync.RWMutex
 	orders map[string]*orderV1.OrderDto
 }
 
-// NewOrderStorage creates a new storage for order data
 func NewOrderStorage() *OrderStorage {
 	return &OrderStorage{
 		orders: make(map[string]*orderV1.OrderDto),
 	}
 }
 
-// GetOrder returns the order by UUID
-func (s *OrderStorage) GetOrder(orderUUID string) *orderV1.OrderDto {
+func (s *OrderStorage) GetOrder(orderUUID string) (*orderV1.OrderDto, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	order, ok := s.orders[orderUUID]
 	if !ok {
-		return nil
+		return &orderV1.OrderDto{}, ErrOrderNotFound
 	}
 
-	return order
+	return order, nil
 }
 
-// CreateOrder creates a new order
-func (s *OrderStorage) CreateOrder(order *orderV1.OrderDto) {
+func (s *OrderStorage) CreateOrder(order *orderV1.OrderDto) (*orderV1.OrderDto, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.orders[order.OrderUUID.String()] = order
+
+	return order, nil
 }
 
-// UpdateOrder updates an existing order
-func (s *OrderStorage) UpdateOrder(order *orderV1.OrderDto) {
+func (s *OrderStorage) UpdateOrder(order *orderV1.OrderDto) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.orders[order.OrderUUID.String()] = order
+	if _, ok := s.orders[order.OrderUUID.String()]; !ok {
+		return ErrOrderNotFound
+	}
+
+	return nil
 }
 
 // OrderHandler implements the orderV1.Handler interface for handling requests to the Order API
@@ -83,7 +90,6 @@ type OrderHandler struct {
 	paymentClient   paymentV1.PaymentServiceClient
 }
 
-// NewOrderHandler creates a new order handler
 func NewOrderHandler(storage *OrderStorage, inventoryClient inventoryV1.InventoryServiceClient, paymentClient paymentV1.PaymentServiceClient) *OrderHandler {
 	return &OrderHandler{
 		storage:         storage,
@@ -92,71 +98,86 @@ func NewOrderHandler(storage *OrderStorage, inventoryClient inventoryV1.Inventor
 	}
 }
 
-// CreateOrder handles the request to create a new order
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrderRequest) (orderV1.CreateOrderRes, error) {
-	// Calculate total price by fetching part prices from inventory service
-	var totalPrice float64
-
-	for _, partUUID := range req.PartUuids {
-		// Call inventory service to get part details
-		resp, err := h.inventoryClient.GetPart(ctx, &inventoryV1.GetPartRequest{
-			Uuid: partUUID.String(),
-		})
-		if err != nil {
-			log.Printf("Error fetching part %s from inventory: %v", partUUID.String(), err)
-			return &orderV1.BadRequestError{
-				Code:    http.StatusBadRequest,
-				Message: fmt.Sprintf("Failed to fetch part %s from inventory: %v", partUUID.String(), err),
-			}, nil
-		}
-
-		// Add part price to total
-		totalPrice += resp.Part.Price
+	resp, err := h.inventoryClient.ListParts(ctx, &inventoryV1.ListPartsRequest{
+		Filter: &inventoryV1.PartsFilter{
+			Uuids: convertPartUUIDsToProto(req.PartUuids),
+		},
+	})
+	if err != nil {
+		return &orderV1.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("Failed to fetch parts from inventory: %v", err),
+		}, nil
 	}
+
+	if len(resp.Parts) != len(req.PartUuids) {
+		return &orderV1.BadRequestError{
+			Code:    http.StatusBadRequest,
+			Message: "Some parts were not found",
+		}, nil
+	}
+
+	orderTotalPrice := countTotalPartsPrice(resp.Parts)
 
 	// Generate new order UUID
 	orderUUID := uuid.New()
 
-	// Create the order object
 	order := &orderV1.OrderDto{
 		OrderUUID:  orderUUID,
 		UserUUID:   req.UserUUID,
 		PartUuids:  req.PartUuids,
-		TotalPrice: totalPrice,
+		TotalPrice: orderTotalPrice,
 		Status:     orderV1.OrderStatusPENDINGPAYMENT,
 	}
 
-	// Save to storage
-	h.storage.CreateOrder(order)
+	_, err = h.storage.CreateOrder(order)
+	if err != nil {
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to create order: %v", err),
+		}, nil
+	}
 
-	// Return response
 	return &orderV1.CreateOrderResponse{
 		OrderUUID:  orderUUID,
-		TotalPrice: totalPrice,
+		TotalPrice: orderTotalPrice,
 	}, nil
 }
 
-// GetOrderByUUID handles the request to get an order by UUID
 func (h *OrderHandler) GetOrderByUUID(ctx context.Context, params orderV1.GetOrderByUUIDParams) (orderV1.GetOrderByUUIDRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
-	if order == nil {
-		return &orderV1.NotFoundError{
-			Code:    404,
-			Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
-		}, nil
+	order, err := h.storage.GetOrder(params.OrderUUID.String())
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{
+				Code:    404,
+				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
+			}, nil
+		} else {
+			return &orderV1.InternalServerError{
+				Code:    500,
+				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+			}, nil
+		}
 	}
 
 	return order, nil
 }
 
-// PayOrder handles the request to pay for an order
 func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params orderV1.PayOrderParams) (orderV1.PayOrderRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
-	if order == nil {
-		return &orderV1.NotFoundError{
-			Code:    404,
-			Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
-		}, nil
+	order, err := h.storage.GetOrder(params.OrderUUID.String())
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{
+				Code:    404,
+				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
+			}, nil
+		} else {
+			return &orderV1.InternalServerError{
+				Code:    500,
+				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+			}, nil
+		}
 	}
 
 	if order.Status != orderV1.OrderStatusPENDINGPAYMENT {
@@ -179,39 +200,61 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 		}, nil
 	}
 
-	// Update order with payment information
 	order.Status = orderV1.OrderStatusPAID
-	order.TransactionUUID = orderV1.NewOptNilUUID(uuid.MustParse(transactionUUID.TransactionUuid))
+	parsedUUID, err := uuid.Parse(transactionUUID.TransactionUuid)
+	if err != nil {
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to parse transaction UUID %s: %v", transactionUUID.TransactionUuid, err),
+		}, nil
+	}
+	order.TransactionUUID = orderV1.NewOptNilUUID(parsedUUID)
 	order.PaymentMethod = orderV1.NewOptNilPaymentMethod(req.PaymentMethod)
 
-	h.storage.UpdateOrder(order)
+	err = h.storage.UpdateOrder(order)
+	if err != nil {
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to update order %s: %v", params.OrderUUID.String(), err),
+		}, nil
+	}
 
 	return &orderV1.PayOrderResponse{
 		TransactionUUID: uuid.MustParse(transactionUUID.TransactionUuid),
 	}, nil
 }
 
-// CancelOrder handles the request to cancel an order
 func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrderParams) (orderV1.CancelOrderRes, error) {
-	order := h.storage.GetOrder(params.OrderUUID.String())
-	if order == nil {
-		return &orderV1.NotFoundError{
-			Code:    404,
-			Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
-		}, nil
+	order, err := h.storage.GetOrder(params.OrderUUID.String())
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			return &orderV1.NotFoundError{
+				Code:    404,
+				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
+			}, nil
+		} else {
+			return &orderV1.InternalServerError{
+				Code:    500,
+				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+			}, nil
+		}
 	}
 
-	// Check if order is already paid
-	if order.Status == orderV1.OrderStatusPAID || order.Status == orderV1.OrderStatusASSEMBLED {
+	if order.Status == orderV1.OrderStatusPAID || order.Status == orderV1.OrderStatusCANCELLED {
 		return &orderV1.ConflictError{
 			Code:    409,
-			Message: "Order is already paid and cannot be cancelled",
+			Message: "Order has already been paid or cancelled",
 		}, nil
 	}
 
-	// Update order status
 	order.Status = orderV1.OrderStatusCANCELLED
-	h.storage.UpdateOrder(order)
+	err = h.storage.UpdateOrder(order)
+	if err != nil {
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to update order %s: %v", params.OrderUUID.String(), err),
+		}, nil
+	}
 
 	return &orderV1.CancelOrderNoContent{}, nil
 }
@@ -340,4 +383,21 @@ func main() {
 	}
 
 	log.Println("✅ Server stopped")
+}
+
+// CreateOrder helper functions
+func convertPartUUIDsToProto(partUUIDs []uuid.UUID) []string {
+	result := make([]string, 0, len(partUUIDs))
+	for _, partUUID := range partUUIDs {
+		result = append(result, partUUID.String())
+	}
+	return result
+}
+
+func countTotalPartsPrice(parts []*inventoryV1.Part) float64 {
+	var totalPrice float64
+	for _, part := range parts {
+		totalPrice += part.Price
+	}
+	return totalPrice
 }
