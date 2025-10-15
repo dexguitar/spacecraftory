@@ -9,14 +9,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"slices"
 	"syscall"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 
 	"github.com/dexguitar/spacecraftory/payment/internal/interceptor"
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
@@ -27,6 +30,8 @@ const (
 	httpPort = 8082
 )
 
+var validPaymentMethods = []paymentV1.PaymentMethod{paymentV1.PaymentMethod_PAYMENT_METHOD_CARD, paymentV1.PaymentMethod_PAYMENT_METHOD_SBP, paymentV1.PaymentMethod_PAYMENT_METHOD_CREDIT_CARD, paymentV1.PaymentMethod_PAYMENT_METHOD_INVESTOR_MONEY}
+
 // paymentService implements gRPC service for working with payment
 type paymentService struct {
 	paymentV1.UnimplementedPaymentServiceServer
@@ -34,6 +39,14 @@ type paymentService struct {
 
 // PayOrder returns a transaction uuid
 func (s *paymentService) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*paymentV1.PayOrderResponse, error) {
+	if req.OrderUuid == "" || req.UserUuid == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "order_uuid and user_uuid are required")
+	}
+
+	if !slices.Contains(validPaymentMethods, req.PaymentMethod) {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid payment_method")
+	}
+
 	transaction_uuid := uuid.NewString()
 
 	return &paymentV1.PayOrderResponse{

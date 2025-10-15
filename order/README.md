@@ -116,7 +116,6 @@ curl -X POST http://localhost:8080/api/v1/orders/123e4567-e89b-12d3-a456-4266141
 - `PENDING_PAYMENT` - Order created, awaiting payment
 - `PAID` - Order has been paid
 - `CANCELLED` - Order has been cancelled
-- `ASSEMBLED` - Order has been assembled and shipped
 
 ---
 

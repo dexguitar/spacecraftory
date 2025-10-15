@@ -105,10 +105,11 @@ func (h *OrderHandler) CreateOrder(ctx context.Context, req *orderV1.CreateOrder
 		},
 	})
 	if err != nil {
-		return &orderV1.BadRequestError{
-			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("Failed to fetch parts from inventory: %v", err),
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to create order: %v", err),
 		}, nil
+		// TODO: handle 4xx and other errors
 	}
 
 	if len(resp.Parts) != len(req.PartUuids) {
@@ -153,12 +154,11 @@ func (h *OrderHandler) GetOrderByUUID(ctx context.Context, params orderV1.GetOrd
 				Code:    404,
 				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
 			}, nil
-		} else {
-			return &orderV1.InternalServerError{
-				Code:    500,
-				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
-			}, nil
 		}
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+		}, nil
 	}
 
 	return order, nil
@@ -172,18 +172,17 @@ func (h *OrderHandler) PayOrder(ctx context.Context, req *orderV1.PayOrderReques
 				Code:    404,
 				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
 			}, nil
-		} else {
-			return &orderV1.InternalServerError{
-				Code:    500,
-				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
-			}, nil
 		}
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+		}, nil
 	}
 
-	if order.Status != orderV1.OrderStatusPENDINGPAYMENT {
+	if order.Status == orderV1.OrderStatusPAID || order.Status == orderV1.OrderStatusCANCELLED {
 		return &orderV1.ConflictError{
 			Code:    409,
-			Message: fmt.Sprintf("Order %s is not in pending payment status", params.OrderUUID.String()),
+			Message: fmt.Sprintf("Order %s has already been paid or cancelled", params.OrderUUID.String()),
 		}, nil
 	}
 
@@ -232,12 +231,11 @@ func (h *OrderHandler) CancelOrder(ctx context.Context, params orderV1.CancelOrd
 				Code:    404,
 				Message: fmt.Sprintf("Order %s not found", params.OrderUUID.String()),
 			}, nil
-		} else {
-			return &orderV1.InternalServerError{
-				Code:    500,
-				Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
-			}, nil
 		}
+		return &orderV1.InternalServerError{
+			Code:    500,
+			Message: fmt.Sprintf("Failed to get order %s: %v", params.OrderUUID.String(), err),
+		}, nil
 	}
 
 	if order.Status == orderV1.OrderStatusPAID || order.Status == orderV1.OrderStatusCANCELLED {

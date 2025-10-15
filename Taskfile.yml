@@ -415,8 +415,8 @@ tasks:
         fi
 
         # Check that status became PAID
-        if [[ "$ORDER_STATUS" != *"PAID"* && "$ORDER_STATUS" != *"ASSEMBLED"* ]]; then
-          echo "❌ Invalid order status after payment. Expected PAID or ASSEMBLED, got: $ORDER_STATUS"
+        if [[ "$ORDER_STATUS" != *"PAID"* ]]; then
+          echo "❌ Invalid order status after payment. Expected PAID, got: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Order status after payment: $ORDER_STATUS"
