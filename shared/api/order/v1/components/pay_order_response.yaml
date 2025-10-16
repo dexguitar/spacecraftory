@@ -1,0 +1,9 @@
+type: object
+required:
+  - transaction_uuid
+properties:
+  transaction_uuid:
+    type: string
+    format: uuid
+    description: Unique identifier of the payment transaction
+    example: "789e4567-e89b-12d3-a456-426614174999"

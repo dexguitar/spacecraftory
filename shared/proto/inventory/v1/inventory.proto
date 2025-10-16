@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package inventory.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1;inventory_v1";
+
+// Category represents the type/category of a spacecraft part.
+enum Category {
+    CATEGORY_UNKNOWN_UNSPECIFIED = 0;
+    CATEGORY_ENGINE = 1;
+    CATEGORY_FUEL = 2;
+    CATEGORY_PORTHOLE = 3;
+    CATEGORY_WING = 4;
+}
+
+// Part represents a spacecraft part available in the inventory.
+message Part {
+    string uuid = 1;
+    string name = 2;
+    string description = 3;
+    double price = 4;
+    int64 stock_quantity = 5;
+    Category category = 6;
+    Dimensions dimensions = 7;
+    Manufacturer manufacturer = 8;
+    repeated string tags = 9;
+    map<string, Value> metadata = 10;
+    google.protobuf.Timestamp created_at = 11;
+    google.protobuf.Timestamp updated_at = 12;
+}
+
+// Dimensions represents the physical dimensions of a part.
+message Dimensions {
+    double length = 1;
+    double width = 2;
+    double height = 3;
+    double weight = 4;
+}
+
+// Manufacturer represents the manufacturer information of a part.
+message Manufacturer {
+    string name = 1;
+    string country = 2;
+    string website = 3;
+}
+
+// Value represents a dynamic value that can be a string, int, or double.
+message Value {
+    oneof value {
+        string string_value = 1;
+        int64 int_value = 2;
+        double double_value = 3;
+    }
+}
+
+// PartsFilter defines the filtering criteria for listing parts.
+message PartsFilter {
+    repeated string uuids = 1;
+    repeated string names = 2;
+    repeated Category categories = 3;
+    repeated string manufacturer_countries = 4;
+    repeated string tags = 5;
+}
+
+// GetPartRequest is the request to get a part by UUID.
+message GetPartRequest {
+    string uuid = 1 [
+        (validate.rules).string.len = 36
+    ];
+}
+
+// GetPartResponse is the response containing the requested part.
+message GetPartResponse {
+    Part part = 1;
+}
+
+// ListPartsRequest is the request to list parts with optional filters.
+message ListPartsRequest {
+    PartsFilter filter = 1;
+}
+
+// ListPartsResponse is the response containing a list of parts.
+message ListPartsResponse {
+    repeated Part parts = 1;
+}
+
+// InventoryService provides operations for managing spacecraft parts inventory.
+service InventoryService {
+    rpc GetPart(GetPartRequest) returns (GetPartResponse) {
+        option (google.api.http) = {
+            get: "/api/v1/parts/{uuid}"
+        };
+    };
+    rpc ListParts(ListPartsRequest) returns (ListPartsResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/parts"
+            body: "*"
+        };
+    };
+}
+

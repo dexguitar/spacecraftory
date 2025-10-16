@@ -1,0 +1,119 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "payment/v1/payment.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "PaymentService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/api/v1/payments": {
+      "post": {
+        "operationId": "PayOrder",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1PayOrderResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "description": "PayOrderRequest is the request message for paying an order.",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1PayOrderRequest"
+            }
+          }
+        ],
+        "tags": [
+          "PaymentService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1PayOrderRequest": {
+      "type": "object",
+      "properties": {
+        "order_uuid": {
+          "type": "string"
+        },
+        "user_uuid": {
+          "type": "string"
+        },
+        "payment_method": {
+          "$ref": "#/definitions/v1PaymentMethod"
+        }
+      },
+      "description": "PayOrderRequest is the request message for paying an order."
+    },
+    "v1PayOrderResponse": {
+      "type": "object",
+      "properties": {
+        "transaction_uuid": {
+          "type": "string"
+        }
+      },
+      "description": "PayOrderResponse is the response message containing the generated transaction UUID."
+    },
+    "v1PaymentMethod": {
+      "type": "string",
+      "enum": [
+        "PAYMENT_METHOD_UNKNOWN_UNSPECIFIED",
+        "PAYMENT_METHOD_CARD",
+        "PAYMENT_METHOD_SBP",
+        "PAYMENT_METHOD_CREDIT_CARD",
+        "PAYMENT_METHOD_INVESTOR_MONEY"
+      ],
+      "default": "PAYMENT_METHOD_UNKNOWN_UNSPECIFIED",
+      "description": "PaymentMethod represents the method of payment."
+    }
+  }
+}

@@ -1,0 +1,20 @@
+type: object
+required:
+  - user_uuid
+  - part_uuids
+properties:
+  user_uuid:
+    type: string
+    format: uuid
+    description: UUID of the user placing the order
+    example: "550e8400-e29b-41d4-a716-446655440000"
+  part_uuids:
+    type: array
+    description: List of part UUIDs to include in the order
+    items:
+      type: string
+      format: uuid
+    minItems: 1
+    example:
+      - "123e4567-e89b-12d3-a456-426614174001"
+      - "123e4567-e89b-12d3-a456-426614174002"

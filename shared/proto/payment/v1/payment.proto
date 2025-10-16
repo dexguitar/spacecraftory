@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package payment.v1;
+
+import "google/api/annotations.proto";
+import "validate/validate.proto";
+
+option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1;payment_v1";
+
+// PaymentMethod represents the method of payment.
+enum PaymentMethod {
+    PAYMENT_METHOD_UNKNOWN_UNSPECIFIED = 0;
+    PAYMENT_METHOD_CARD = 1;
+    PAYMENT_METHOD_SBP = 2;
+    PAYMENT_METHOD_CREDIT_CARD = 3;
+    PAYMENT_METHOD_INVESTOR_MONEY = 4;
+}
+
+// PayOrderRequest is the request message for paying an order.
+message PayOrderRequest {
+    string order_uuid = 1 [
+        (validate.rules).string.len = 36
+    ];
+    string user_uuid = 2 [
+        (validate.rules).string.len = 36
+    ];
+    PaymentMethod payment_method = 3 [
+        (validate.rules).enum.defined_only = true,
+        (validate.rules).enum.in = [
+            "PAYMENT_METHOD_CARD",
+            "PAYMENT_METHOD_SBP",
+            "PAYMENT_METHOD_CREDIT_CARD",
+            "PAYMENT_METHOD_INVESTOR_MONEY"
+        ]
+    ];
+}
+
+// PayOrderResponse is the response message containing the generated transaction UUID.
+message PayOrderResponse {
+    string transaction_uuid = 1;
+}
+
+// PaymentService provides operations for processing payments.
+service PaymentService {
+    rpc PayOrder (PayOrderRequest) returns (PayOrderResponse) {
+        option (google.api.http) = {
+            post: "/api/v1/payments"
+            body: "*"
+        };
+    };
+}
+

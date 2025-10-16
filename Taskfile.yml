@@ -2,14 +2,17 @@ version: "3"
 
 # Global project variables
 vars:
-  GO_VERSION: "1.24"
+  GO_VERSION: "1.25.2"
   GOLANGCI_LINT_VERSION: "v2.1.5"
   GCI_VERSION: "v0.13.6"
   GOFUMPT_VERSION: "v0.8.0"
   BUF_VERSION: "1.53.0"
   PROTOC_GEN_GO_VERSION: "v1.36.6"
   PROTOC_GEN_GO_GRPC_VERSION: "v1.5.1"
-  OGEN_VERSION: "v1.12.0"
+  PROTOC_GEN_GRPC_GATEWAY_VERSION: "v2.27.3"
+  PROTOC_GEN_VALIDATE_VERSION: "v1.2.1"
+  PROTOC_GEN_OPENAPIV2_VERSION: 'v2.26.3'
+  OGEN_VERSION: "v1.16.0"
   YQ_VERSION: "v4.45.2"
   GRPCURL_VERSION: "v1.9.3"
 
@@ -22,6 +25,9 @@ vars:
   YQ: "{{.BIN_DIR}}/yq"
   PROTOC_GEN_GO: "{{.BIN_DIR}}/protoc-gen-go"
   PROTOC_GEN_GO_GRPC: "{{.BIN_DIR}}/protoc-gen-go-grpc"
+  PROTOC_GEN_GRPC_GATEWAY: "{{.BIN_DIR}}/protoc-gen-grpc-gateway"
+  PROTOC_GEN_VALIDATE: "{{.BIN_DIR}}/protoc-gen-validate"
+  PROTOC_GEN_OPENAPIV2: "{{.BIN_DIR}}/protoc-gen-openapiv2"
   GRPCURL: "{{.BIN_DIR}}/grpcurl"
 
   NODE_MODULES_DIR: "{{.ROOT_DIR}}/node_modules/.bin"
@@ -158,13 +164,32 @@ tasks:
           echo '📦 Installing protoc-gen-go-grpc...'
           GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
         }
+        [ -f {{.PROTOC_GEN_GRPC_GATEWAY}} ] || {
+          echo '📦 Installing protoc-gen-grpc-gateway...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@{{.PROTOC_GEN_GRPC_GATEWAY_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_VALIDATE}} ] || {
+          echo '📦 Installing protoc-gen-validate...'
+          GOBIN={{.BIN_DIR}} go install github.com/envoyproxy/protoc-gen-validate@{{.PROTOC_GEN_VALIDATE_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_OPENAPIV2}} ] || {
+          echo '📦 Installing protoc-gen-openapiv2...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@{{.PROTOC_GEN_OPENAPIV2_VERSION}}
+        }
 
   proto:gen:
-    deps: [install-buf, proto:install-plugins, proto:lint]
+    deps: [install-buf, proto:install-plugins, proto:update-deps, proto:lint]
     desc: Generate Go code from .proto
     dir: shared/proto
     cmds:
       - "{{.BUF}} generate"
+
+  proto:update-deps:
+    deps: [install-buf]
+    desc: Update dependencies in .proto files
+    dir: shared/proto
+    cmds:
+      - "{{.BUF}} dep update"
 
   proto:lint:
     deps: [install-buf, proto:install-plugins]
@@ -179,6 +204,9 @@ tasks:
       - |
         [ -f {{.REDOCLY}} ] || {
           npm ci
+        } || {
+          echo "📦 Installing redocly-cli..."
+          npm install
         }
 
   redocly-cli:order-v1-bundle:
@@ -237,7 +265,7 @@ tasks:
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
             echo "🔄 Updating dependencies in $mod"
-            (cd "$mod" && go mod tidy -compat=1.24) || exit 1
+            (cd "$mod" && go mod tidy -compat=1.25.2) || exit 1
           fi
         done
 
@@ -324,9 +352,9 @@ tasks:
         fi
 
         # Extract order UUID accounting for different JSON formats
-        ORDER_UUID=$(echo $ORDER_RESPONSE | grep -o '"uuid":"[^"]*' | cut -d'"' -f4)
+        ORDER_UUID=$(echo $ORDER_RESPONSE | grep -o '"order_uuid":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER_UUID" ]; then
-          ORDER_UUID=$(echo $ORDER_RESPONSE | grep -o '"uuid": "[^"]*' | cut -d'"' -f4)
+          ORDER_UUID=$(echo $ORDER_RESPONSE | grep -o '"order_uuid": "[^"]*' | cut -d'"' -f4)
           if [ -z "$ORDER_UUID" ]; then
             echo "❌ Failed to extract order UUID from response."
             echo "🔍 Server response: $ORDER_RESPONSE"
@@ -367,7 +395,7 @@ tasks:
         echo "💰 Test 6: Pay for order (REST API)"
         PAY_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders/$ORDER_UUID/pay" \
           -H "Content-Type: application/json" \
-          -d "{\"payment_method\":\"PAYMENT_METHOD_CARD\"}")
+          -d "{\"payment_method\":\"CARD\"}")
 
         if [[ "$PAY_RESPONSE" == *"error"* ]]; then
           echo "❌ Error paying for order."
@@ -387,8 +415,8 @@ tasks:
         fi
 
         # Check that status became PAID
-        if [[ "$ORDER_STATUS" != *"PAID"* && "$ORDER_STATUS" != *"ASSEMBLED"* ]]; then
-          echo "❌ Invalid order status after payment. Expected PAID or ASSEMBLED, got: $ORDER_STATUS"
+        if [[ "$ORDER_STATUS" != *"PAID"* ]]; then
+          echo "❌ Invalid order status after payment. Expected PAID, got: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Order status after payment: $ORDER_STATUS"
@@ -406,9 +434,9 @@ tasks:
         fi
 
         # Extract second order UUID accounting for different JSON formats
-        ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"uuid":"[^"]*' | cut -d'"' -f4)
+        ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"order_uuid":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER2_UUID" ]; then
-          ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"uuid": "[^"]*' | cut -d'"' -f4)
+          ORDER2_UUID=$(echo $ORDER2_RESPONSE | grep -o '"order_uuid": "[^"]*' | cut -d'"' -f4)
           if [ -z "$ORDER2_UUID" ]; then
             echo "❌ Failed to extract second order UUID from response."
             echo "🔍 Server response: $ORDER2_RESPONSE"

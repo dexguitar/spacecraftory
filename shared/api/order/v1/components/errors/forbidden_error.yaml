@@ -1,0 +1,13 @@
+type: object
+required:
+  - code
+  - message
+properties:
+  code:
+    type: integer
+    description: Error code
+    example: 403
+  message:
+    type: string
+    description: Error message
+    example: "Forbidden"
