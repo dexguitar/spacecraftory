@@ -62,8 +62,6 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("🛑 Shutting down Payment servers...")
-
-	// Shutdown gRPC server
 	s.GracefulStop()
 	log.Println("✅ Payment gRPC server stopped")
 }
