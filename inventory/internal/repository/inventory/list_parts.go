@@ -12,16 +12,13 @@ func (r *inventoryRepository) ListParts(ctx context.Context, filter *model.Parts
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-
 	if filter == nil {
 		return r.getAllParts(), nil
 	}
 
-
 	if len(filter.UUIDs) > 0 {
 		return r.getPartsByUUIDs(filter.UUIDs), nil
 	}
-
 
 	return r.filterParts(filter), nil
 }

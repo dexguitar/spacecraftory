@@ -45,7 +45,6 @@ func PartRepoToServiceModel(repoPart *repoModel.Part) *serviceModel.Part {
 	}
 }
 
-
 func dimensionsServiceToRepo(serviceDims *serviceModel.Dimensions) *repoModel.Dimensions {
 	if serviceDims == nil {
 		return nil

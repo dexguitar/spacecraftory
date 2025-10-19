@@ -39,14 +39,14 @@ func main() {
 		grpc.ChainUnaryInterceptor(interceptor.ValidationInterceptor()),
 	)
 
+	// Enable reflection for debugging
+	reflection.Register(s)
+
 	repo := paymentRepository.NewPaymentRepository()
 	paymentService := paymentService.NewService(repo)
 	paymentApi := paymentApi.NewAPI(paymentService)
 
 	paymentV1.RegisterPaymentServiceServer(s, paymentApi)
-
-	// Debugging purposes
-	reflection.Register(s)
 
 	go func() {
 		log.Printf("🚀 Payment gRPC server listening on port %d\n", grpcPort)

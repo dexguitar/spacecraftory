@@ -1,9 +1,10 @@
 package converter
 
 import (
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/dexguitar/spacecraftory/inventory/internal/model"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func PartProtoToServiceModel(protoPart *inventoryV1.Part) *model.Part {
@@ -64,7 +65,6 @@ func PartsFilterProtoToServiceModel(protoFilter *inventoryV1.PartsFilter) *model
 		Tags:                  protoFilter.GetTags(),
 	}
 }
-
 
 func categoryProtoToService(protoCategory inventoryV1.Category) model.Category {
 	if category, ok := model.CategoryMap[protoCategory]; ok {

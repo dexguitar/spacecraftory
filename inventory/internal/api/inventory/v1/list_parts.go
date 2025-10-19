@@ -18,7 +18,6 @@ func (a *api) ListParts(ctx context.Context, req *inventoryV1.ListPartsRequest) 
 		return nil, status.Errorf(codes.Internal, "failed to list parts: %v", err)
 	}
 
-
 	protoParts := make([]*inventoryV1.Part, 0, len(parts))
 	for _, part := range parts {
 		protoParts = append(protoParts, converter.PartServiceModelToProto(part))

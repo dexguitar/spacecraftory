@@ -2,14 +2,13 @@ package model
 
 import (
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
-	"github.com/google/uuid"
 )
 
 type PaymentMethod string
 
 type Payment struct {
-	OrderUUID     uuid.UUID
-	UserUUID      uuid.UUID
+	OrderUUID     string
+	UserUUID      string
 	PaymentMethod PaymentMethod
 }
 

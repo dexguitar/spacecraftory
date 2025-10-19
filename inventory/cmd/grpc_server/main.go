@@ -39,6 +39,9 @@ func main() {
 		grpc.ChainUnaryInterceptor(interceptor.ValidationInterceptor()),
 	)
 
+	// Enable reflection for debugging
+	reflection.Register(s)
+
 	repo := inventoryRepository.NewInventoryRepository()
 
 	repo.InitializeMockData(utils.GenerateMockParts())
@@ -47,9 +50,6 @@ func main() {
 	api := inventoryApi.NewAPI(service)
 
 	inventoryV1.RegisterInventoryServiceServer(s, api)
-
-	// Enable reflection for debugging
-	reflection.Register(s)
 
 	// Start gRPC server
 	go func() {

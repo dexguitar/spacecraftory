@@ -9,8 +9,8 @@ import (
 	repoConverter "github.com/dexguitar/spacecraftory/payment/internal/repository/converter"
 )
 
-func (r *paymentRepository) PayOrder(ctx context.Context, paymentInfo *model.Payment) (uuid.UUID, error) {
-	newPaymentUUID := uuid.New()
+func (r *paymentRepository) PayOrder(ctx context.Context, paymentInfo *model.Payment) (string, error) {
+	newPaymentUUID := uuid.New().String()
 
 	repoModel := repoConverter.PaymentInfoToRepoModel(paymentInfo)
 

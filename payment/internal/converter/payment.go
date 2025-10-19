@@ -23,16 +23,16 @@ func PaymentDtoToServiceModel(paymentDto *paymentV1.PayOrderRequest) (*model.Pay
 		return nil, errors.New("invalid payment method")
 	}
 	return &model.Payment{
-		OrderUUID:     orderUUID,
-		UserUUID:      userUUID,
+		OrderUUID:     orderUUID.String(),
+		UserUUID:      userUUID.String(),
 		PaymentMethod: paymentMethod,
 	}, nil
 }
 
 func PaymentServiceModelToDto(paymentServiceModel *model.Payment) *paymentV1.PayOrderRequest {
 	return &paymentV1.PayOrderRequest{
-		OrderUuid:     paymentServiceModel.OrderUUID.String(),
-		UserUuid:      paymentServiceModel.UserUUID.String(),
+		OrderUuid:     paymentServiceModel.OrderUUID,
+		UserUuid:      paymentServiceModel.UserUUID,
 		PaymentMethod: paymentMethodToProto(paymentServiceModel.PaymentMethod),
 	}
 }

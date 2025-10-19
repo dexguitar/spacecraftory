@@ -12,5 +12,5 @@ func (s *service) PayOrder(ctx context.Context, payment *model.Payment) (string,
 		// TODO: later will add db error check and map to service errors
 		return "", err
 	}
-	return transactionUUID.String(), nil
+	return transactionUUID, nil
 }
