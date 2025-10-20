@@ -15,6 +15,7 @@ vars:
   OGEN_VERSION: "v1.16.0"
   YQ_VERSION: "v4.45.2"
   GRPCURL_VERSION: "v1.9.3"
+  MOCKERY_VERSION: "v2.53.3"
 
   BIN_DIR: "{{.ROOT_DIR}}/bin"
   GOLANGCI_LINT: "{{.BIN_DIR}}/golangci-lint"
@@ -29,6 +30,7 @@ vars:
   PROTOC_GEN_VALIDATE: "{{.BIN_DIR}}/protoc-gen-validate"
   PROTOC_GEN_OPENAPIV2: "{{.BIN_DIR}}/protoc-gen-openapiv2"
   GRPCURL: "{{.BIN_DIR}}/grpcurl"
+  MOCKERY: "{{.BIN_DIR}}/mockery"
 
   NODE_MODULES_DIR: "{{.ROOT_DIR}}/node_modules/.bin"
   REDOCLY: "{{.NODE_MODULES_DIR}}/redocly"
