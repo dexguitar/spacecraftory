@@ -1,3 +1,4 @@
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/dexguitar/facd6b4c2386f87586848b74c73136e4/raw/coverage.json)
 # Order Service
 
 HTTP/REST API service for managing spacecraft orders. Handles order creation, payment, retrieval, and cancellation.

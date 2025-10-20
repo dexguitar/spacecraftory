@@ -3,7 +3,6 @@ module github.com/dexguitar/spacecraftory/inventory
 go 1.25.2
 
 require (
-	github.com/brianvoe/gofakeit/v7 v7.8.0
 	github.com/dexguitar/spacecraftory/shared v0.0.0
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
