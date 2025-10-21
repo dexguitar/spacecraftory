@@ -69,18 +69,18 @@ func (s *OrderServiceSuite) TestCreateOrderSuccess() {
 				Return(tc.parts, nil).Once()
 
 			expectedOrder := &model.Order{
-				UserUUID:   tc.userUUID,
-				PartUUIDs:  tc.partUUIDs,
-				TotalPrice: tc.expectedPrice,
-				Status:     model.StatusPENDINGPAYMENT,
+				UserUUID:    tc.userUUID,
+				PartUUIDs:   tc.partUUIDs,
+				TotalPrice:  tc.expectedPrice,
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			}
 
 			createdOrder := &model.Order{
-				OrderUUID:  "created-order-uuid",
-				UserUUID:   tc.userUUID,
-				PartUUIDs:  tc.partUUIDs,
-				TotalPrice: tc.expectedPrice,
-				Status:     model.StatusPENDINGPAYMENT,
+				OrderUUID:   "created-order-uuid",
+				UserUUID:    tc.userUUID,
+				PartUUIDs:   tc.partUUIDs,
+				TotalPrice:  tc.expectedPrice,
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			}
 
 			s.orderRepository.On("CreateOrder", s.ctx, expectedOrder).
@@ -167,10 +167,10 @@ func (s *OrderServiceSuite) TestCreateOrderError() {
 					Return(parts, nil).Once()
 
 				expectedOrder := &model.Order{
-					UserUUID:   "123e4567-e89b-12d3-a456-426614174000",
-					PartUUIDs:  []string{"part-uuid-1"},
-					TotalPrice: 100.00,
-					Status:     model.StatusPENDINGPAYMENT,
+					UserUUID:    "123e4567-e89b-12d3-a456-426614174000",
+					PartUUIDs:   []string{"part-uuid-1"},
+					TotalPrice:  100.00,
+					OrderStatus: model.OrderStatusPENDINGPAYMENT,
 				}
 				s.orderRepository.On("CreateOrder", s.ctx, expectedOrder).
 					Return(nil, ErrCreateOrderError).Once()

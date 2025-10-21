@@ -1,7 +1,7 @@
 package model
 
 type (
-	Status        string
+	OrderStatus   string
 	PaymentMethod string
 )
 
@@ -14,10 +14,10 @@ const (
 )
 
 const (
-	StatusUNKNOWN        Status = "UNKNOWN"
-	StatusPENDINGPAYMENT Status = "PENDING_PAYMENT"
-	StatusPAID           Status = "PAID"
-	StatusCANCELLED      Status = "CANCELLED"
+	OrderStatusUNKNOWN        OrderStatus = "UNKNOWN"
+	OrderStatusPENDINGPAYMENT OrderStatus = "PENDING_PAYMENT"
+	OrderStatusPAID           OrderStatus = "PAID"
+	OrderStatusCANCELLED      OrderStatus = "CANCELLED"
 )
 
 type Order struct {
@@ -25,7 +25,7 @@ type Order struct {
 	UserUUID        string
 	PartUUIDs       []string
 	TotalPrice      float64
-	Status          Status
+	OrderStatus     OrderStatus
 	TransactionUUID string
 	PaymentMethod   PaymentMethod
 }

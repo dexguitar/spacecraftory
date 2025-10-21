@@ -7,7 +7,7 @@ import (
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
 )
 
-func PartProtoToServiceModel(protoPart *inventoryV1.Part) *model.Part {
+func ToModelPart(protoPart *inventoryV1.Part) *model.Part {
 	if protoPart == nil {
 		return nil
 	}
@@ -18,16 +18,16 @@ func PartProtoToServiceModel(protoPart *inventoryV1.Part) *model.Part {
 		Description:   protoPart.GetDescription(),
 		Price:         protoPart.GetPrice(),
 		StockQuantity: protoPart.GetStockQuantity(),
-		Category:      categoryProtoToService(protoPart.GetCategory()),
-		Dimensions:    dimensionsProtoToService(protoPart.GetDimensions()),
-		Manufacturer:  manufacturerProtoToService(protoPart.GetManufacturer()),
+		Category:      ToModelCategory(protoPart.GetCategory()),
+		Dimensions:    ToModelDimensions(protoPart.GetDimensions()),
+		Manufacturer:  ToModelManufacturer(protoPart.GetManufacturer()),
 		Tags:          protoPart.GetTags(),
 		CreatedAt:     protoPart.GetCreatedAt().AsTime(),
 		UpdatedAt:     protoPart.GetUpdatedAt().AsTime(),
 	}
 }
 
-func PartServiceModelToProto(servicePart *model.Part) *inventoryV1.Part {
+func ToProtoPart(servicePart *model.Part) *inventoryV1.Part {
 	if servicePart == nil {
 		return nil
 	}
@@ -38,23 +38,35 @@ func PartServiceModelToProto(servicePart *model.Part) *inventoryV1.Part {
 		Description:   servicePart.Description,
 		Price:         servicePart.Price,
 		StockQuantity: servicePart.StockQuantity,
-		Category:      categoryServiceToProto(servicePart.Category),
-		Dimensions:    dimensionsServiceToProto(servicePart.Dimensions),
-		Manufacturer:  manufacturerServiceToProto(servicePart.Manufacturer),
+		Category:      ToProtoCategory(servicePart.Category),
+		Dimensions:    ToProtoDimensions(servicePart.Dimensions),
+		Manufacturer:  ToProtoManufacturer(servicePart.Manufacturer),
 		Tags:          servicePart.Tags,
 		CreatedAt:     timestamppb.New(servicePart.CreatedAt),
 		UpdatedAt:     timestamppb.New(servicePart.UpdatedAt),
 	}
 }
 
-func PartsFilterProtoToServiceModel(protoFilter *inventoryV1.PartsFilter) *model.PartsFilter {
+func ToProtoParts(serviceParts []*model.Part) []*inventoryV1.Part {
+	if serviceParts == nil {
+		return nil
+	}
+
+	protoParts := make([]*inventoryV1.Part, 0, len(serviceParts))
+	for _, part := range serviceParts {
+		protoParts = append(protoParts, ToProtoPart(part))
+	}
+	return protoParts
+}
+
+func ToModelPartsFilter(protoFilter *inventoryV1.PartsFilter) *model.PartsFilter {
 	if protoFilter == nil {
 		return nil
 	}
 
 	categories := make([]model.Category, 0, len(protoFilter.GetCategories()))
 	for _, cat := range protoFilter.GetCategories() {
-		categories = append(categories, categoryProtoToService(cat))
+		categories = append(categories, ToModelCategory(cat))
 	}
 
 	return &model.PartsFilter{
@@ -66,14 +78,14 @@ func PartsFilterProtoToServiceModel(protoFilter *inventoryV1.PartsFilter) *model
 	}
 }
 
-func categoryProtoToService(protoCategory inventoryV1.Category) model.Category {
+func ToModelCategory(protoCategory inventoryV1.Category) model.Category {
 	if category, ok := model.CategoryMap[protoCategory]; ok {
 		return category
 	}
 	return model.CategoryUnknown
 }
 
-func categoryServiceToProto(serviceCategory model.Category) inventoryV1.Category {
+func ToProtoCategory(serviceCategory model.Category) inventoryV1.Category {
 	switch serviceCategory {
 	case model.CategoryEngine:
 		return inventoryV1.Category_CATEGORY_ENGINE
@@ -88,7 +100,7 @@ func categoryServiceToProto(serviceCategory model.Category) inventoryV1.Category
 	}
 }
 
-func dimensionsProtoToService(protoDims *inventoryV1.Dimensions) *model.Dimensions {
+func ToModelDimensions(protoDims *inventoryV1.Dimensions) *model.Dimensions {
 	if protoDims == nil {
 		return nil
 	}
@@ -100,7 +112,7 @@ func dimensionsProtoToService(protoDims *inventoryV1.Dimensions) *model.Dimensio
 	}
 }
 
-func dimensionsServiceToProto(serviceDims *model.Dimensions) *inventoryV1.Dimensions {
+func ToProtoDimensions(serviceDims *model.Dimensions) *inventoryV1.Dimensions {
 	if serviceDims == nil {
 		return nil
 	}
@@ -112,7 +124,7 @@ func dimensionsServiceToProto(serviceDims *model.Dimensions) *inventoryV1.Dimens
 	}
 }
 
-func manufacturerProtoToService(protoMan *inventoryV1.Manufacturer) *model.Manufacturer {
+func ToModelManufacturer(protoMan *inventoryV1.Manufacturer) *model.Manufacturer {
 	if protoMan == nil {
 		return nil
 	}
@@ -123,7 +135,7 @@ func manufacturerProtoToService(protoMan *inventoryV1.Manufacturer) *model.Manuf
 	}
 }
 
-func manufacturerServiceToProto(serviceMan *model.Manufacturer) *inventoryV1.Manufacturer {
+func ToProtoManufacturer(serviceMan *model.Manufacturer) *inventoryV1.Manufacturer {
 	if serviceMan == nil {
 		return nil
 	}

@@ -26,7 +26,7 @@ func (r *inventoryRepository) ListParts(ctx context.Context, filter *model.Parts
 func (r *inventoryRepository) getAllParts() []*model.Part {
 	serviceParts := make([]*model.Part, 0, len(r.parts))
 	for _, repoPart := range r.parts {
-		serviceParts = append(serviceParts, repoConverter.PartRepoToServiceModel(repoPart))
+		serviceParts = append(serviceParts, repoConverter.ToModelPart(repoPart))
 	}
 	return serviceParts
 }
@@ -35,7 +35,7 @@ func (r *inventoryRepository) getPartsByUUIDs(uuids []string) []*model.Part {
 	serviceParts := make([]*model.Part, 0, len(uuids))
 	for _, uuid := range uuids {
 		if repoPart, ok := r.parts[uuid]; ok {
-			serviceParts = append(serviceParts, repoConverter.PartRepoToServiceModel(repoPart))
+			serviceParts = append(serviceParts, repoConverter.ToModelPart(repoPart))
 		}
 	}
 	return serviceParts
@@ -44,7 +44,7 @@ func (r *inventoryRepository) getPartsByUUIDs(uuids []string) []*model.Part {
 func (r *inventoryRepository) filterParts(filter *model.PartsFilter) []*model.Part {
 	serviceParts := make([]*model.Part, 0)
 	for _, repoPart := range r.parts {
-		servicePart := repoConverter.PartRepoToServiceModel(repoPart)
+		servicePart := repoConverter.ToModelPart(repoPart)
 		if r.partMatchesFilter(servicePart, filter) {
 			serviceParts = append(serviceParts, servicePart)
 		}

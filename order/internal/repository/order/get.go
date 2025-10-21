@@ -16,5 +16,5 @@ func (r *orderRepository) GetOrder(ctx context.Context, orderUUID string) (*serv
 		return nil, serviceModel.ErrOrderNotFound
 	}
 
-	return converter.OrderRepoToServiceModel(order), nil
+	return converter.ToModelOrder(order), nil
 }

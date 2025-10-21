@@ -16,7 +16,7 @@ func (s *ServiceSuite) TestGetPartSuccess() {
 
 	for _, uuid := range validUUIDs {
 		repoPart := s.repoMockData[uuid]
-		expectedServicePart := converter.PartRepoToServiceModel(repoPart)
+		expectedServicePart := converter.ToModelPart(repoPart)
 
 		s.inventoryRepo.On("GetPart", s.ctx, uuid).Return(expectedServicePart, nil).Once()
 

@@ -14,11 +14,11 @@ func (s *APISuite) TestGetOrderByUUIDSuccess() {
 	orderUUID := uuid.New()
 
 	serviceOrder := &model.Order{
-		OrderUUID:  orderUUID.String(),
-		UserUUID:   uuid.New().String(),
-		PartUUIDs:  []string{uuid.New().String(), uuid.New().String()},
-		TotalPrice: 250.75,
-		Status:     model.StatusPENDINGPAYMENT,
+		OrderUUID:   orderUUID.String(),
+		UserUUID:    uuid.New().String(),
+		PartUUIDs:   []string{uuid.New().String(), uuid.New().String()},
+		TotalPrice:  250.75,
+		OrderStatus: model.OrderStatusPENDINGPAYMENT,
 	}
 
 	s.orderService.On("GetOrder", s.ctx, orderUUID.String()).

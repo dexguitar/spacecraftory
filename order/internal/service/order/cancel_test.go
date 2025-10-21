@@ -16,7 +16,7 @@ func (s *OrderServiceSuite) TestCancelOrderSuccess() {
 		UserUUID:        "123e4567-e89b-12d3-a456-426614174012",
 		PartUUIDs:       []string{"123e4567-e89b-12d3-a456-426614174001", "123e4567-e89b-12d3-a456-426614174002"},
 		TotalPrice:      100.0,
-		Status:          model.StatusPENDINGPAYMENT,
+		OrderStatus:     model.OrderStatusPENDINGPAYMENT,
 		TransactionUUID: "123e4567-e89b-12d3-a456-426614174003",
 		PaymentMethod:   model.PaymentMethodCARD,
 	}
@@ -30,7 +30,7 @@ func (s *OrderServiceSuite) TestCancelOrderSuccess() {
 	err := s.service.CancelOrder(s.ctx, order.OrderUUID)
 
 	s.Require().NoError(err)
-	assert.Equal(s.T(), model.StatusCANCELLED, order.Status)
+	assert.Equal(s.T(), model.OrderStatusCANCELLED, order.OrderStatus)
 }
 
 func (s *OrderServiceSuite) TestCancelOrderError() {
@@ -54,8 +54,8 @@ func (s *OrderServiceSuite) TestCancelOrderError() {
 			orderUUID: "123e4567-e89b-12d3-a456-426614174000",
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					Status:    model.StatusPAID,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					OrderStatus: model.OrderStatusPAID,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -67,8 +67,8 @@ func (s *OrderServiceSuite) TestCancelOrderError() {
 			orderUUID: "123e4567-e89b-12d3-a456-426614174000",
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					Status:    model.StatusCANCELLED,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					OrderStatus: model.OrderStatusCANCELLED,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -80,8 +80,8 @@ func (s *OrderServiceSuite) TestCancelOrderError() {
 			orderUUID: "123e4567-e89b-12d3-a456-426614174000",
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					Status:    model.StatusPENDINGPAYMENT,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					OrderStatus: model.OrderStatusPENDINGPAYMENT,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()

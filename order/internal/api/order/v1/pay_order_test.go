@@ -52,7 +52,7 @@ func (s *APISuite) TestPayOrderSuccess() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			servicePaymentMethod := converter.PaymentMethodToService(tc.paymentMethod)
+			servicePaymentMethod := converter.ToModelPaymentMethod(tc.paymentMethod)
 
 			s.orderService.On("PayOrder", s.ctx, tc.orderUUID.String(), servicePaymentMethod).
 				Return(tc.transactionUUID, nil).Once()
@@ -115,20 +115,11 @@ func (s *APISuite) TestPayOrderError() {
 			expectedCode:     500,
 			expectedMessage:  "Failed to process payment",
 		},
-		{
-			name:             "Invalid transaction UUID from service",
-			orderUUID:        uuid.New(),
-			paymentMethod:    orderV1.PaymentMethodCARD,
-			serviceTxnUUID:   "invalid-transaction-uuid-format",
-			expectedRespType: &orderV1.InternalServerError{},
-			expectedCode:     500,
-			expectedMessage:  "Failed to parse transaction UUID",
-		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			servicePaymentMethod := converter.PaymentMethodToService(tc.paymentMethod)
+			servicePaymentMethod := converter.ToModelPaymentMethod(tc.paymentMethod)
 
 			if tc.serviceError != nil {
 				s.orderService.On("PayOrder", s.ctx, tc.orderUUID.String(), servicePaymentMethod).
@@ -162,7 +153,7 @@ func (s *APISuite) TestPayOrderError() {
 				assert.Equal(s.T(), tc.expectedMessage, conflictErr.Message)
 			case *orderV1.InternalServerError:
 				internalErr, ok := resp.(*orderV1.InternalServerError)
-				s.Require().True(ok, "response should be InternalServerError")
+				s.Require().True(ok, "response should be BadRequestError")
 				assert.Equal(s.T(), tc.expectedCode, internalErr.Code)
 				assert.Equal(s.T(), tc.expectedMessage, internalErr.Message)
 			default:

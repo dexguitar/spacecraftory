@@ -99,7 +99,7 @@ func (s *APISuite) TestPayOrderError() {
 				PaymentMethod: paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
 			},
 			expectedCode:     codes.InvalidArgument,
-			expectedMsgParts: []string{"invalid request details"},
+			expectedMsgParts: []string{"Invalid request details"},
 		},
 		{
 			name: "Invalid user UUID",
@@ -109,7 +109,7 @@ func (s *APISuite) TestPayOrderError() {
 				PaymentMethod: paymentV1.PaymentMethod_PAYMENT_METHOD_CARD,
 			},
 			expectedCode:     codes.InvalidArgument,
-			expectedMsgParts: []string{"invalid request details"},
+			expectedMsgParts: []string{"Invalid request details"},
 		},
 		{
 			name: "Service returns ErrBadRequest",
@@ -120,7 +120,7 @@ func (s *APISuite) TestPayOrderError() {
 			},
 			serviceError:     model.ErrBadRequest,
 			expectedCode:     codes.InvalidArgument,
-			expectedMsgParts: []string{"invalid request details"},
+			expectedMsgParts: []string{"Invalid request details"},
 		},
 		{
 			name: "Service internal error",
@@ -131,7 +131,7 @@ func (s *APISuite) TestPayOrderError() {
 			},
 			serviceError:     errors.New("database connection failed"),
 			expectedCode:     codes.Internal,
-			expectedMsgParts: []string{"failed to pay order", "database connection failed"},
+			expectedMsgParts: []string{"Internal server error"},
 		},
 	}
 

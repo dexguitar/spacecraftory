@@ -17,15 +17,15 @@ func PartServiceToRepoModel(servicePart *serviceModel.Part) *repoModel.Part {
 		Price:         servicePart.Price,
 		StockQuantity: servicePart.StockQuantity,
 		Category:      servicePart.Category,
-		Dimensions:    dimensionsServiceToRepo(servicePart.Dimensions),
-		Manufacturer:  manufacturerServiceToRepo(servicePart.Manufacturer),
+		Dimensions:    ToRepoDimensions(servicePart.Dimensions),
+		Manufacturer:  ToRepoManufacturer(servicePart.Manufacturer),
 		Tags:          servicePart.Tags,
 		CreatedAt:     servicePart.CreatedAt,
 		UpdatedAt:     servicePart.UpdatedAt,
 	}
 }
 
-func PartRepoToServiceModel(repoPart *repoModel.Part) *serviceModel.Part {
+func ToModelPart(repoPart *repoModel.Part) *serviceModel.Part {
 	if repoPart == nil {
 		return nil
 	}
@@ -37,15 +37,15 @@ func PartRepoToServiceModel(repoPart *repoModel.Part) *serviceModel.Part {
 		Price:         repoPart.Price,
 		StockQuantity: repoPart.StockQuantity,
 		Category:      repoPart.Category,
-		Dimensions:    dimensionsRepoToService(repoPart.Dimensions),
-		Manufacturer:  manufacturerRepoToService(repoPart.Manufacturer),
+		Dimensions:    ToModelDimensions(repoPart.Dimensions),
+		Manufacturer:  ToModelManufacturer(repoPart.Manufacturer),
 		Tags:          repoPart.Tags,
 		CreatedAt:     repoPart.CreatedAt,
 		UpdatedAt:     repoPart.UpdatedAt,
 	}
 }
 
-func dimensionsServiceToRepo(serviceDims *serviceModel.Dimensions) *repoModel.Dimensions {
+func ToRepoDimensions(serviceDims *serviceModel.Dimensions) *repoModel.Dimensions {
 	if serviceDims == nil {
 		return nil
 	}
@@ -57,7 +57,7 @@ func dimensionsServiceToRepo(serviceDims *serviceModel.Dimensions) *repoModel.Di
 	}
 }
 
-func dimensionsRepoToService(repoDims *repoModel.Dimensions) *serviceModel.Dimensions {
+func ToModelDimensions(repoDims *repoModel.Dimensions) *serviceModel.Dimensions {
 	if repoDims == nil {
 		return nil
 	}
@@ -69,7 +69,7 @@ func dimensionsRepoToService(repoDims *repoModel.Dimensions) *serviceModel.Dimen
 	}
 }
 
-func manufacturerServiceToRepo(serviceMan *serviceModel.Manufacturer) *repoModel.Manufacturer {
+func ToRepoManufacturer(serviceMan *serviceModel.Manufacturer) *repoModel.Manufacturer {
 	if serviceMan == nil {
 		return nil
 	}
@@ -80,7 +80,7 @@ func manufacturerServiceToRepo(serviceMan *serviceModel.Manufacturer) *repoModel
 	}
 }
 
-func manufacturerRepoToService(repoMan *repoModel.Manufacturer) *serviceModel.Manufacturer {
+func ToModelManufacturer(repoMan *repoModel.Manufacturer) *serviceModel.Manufacturer {
 	if repoMan == nil {
 		return nil
 	}

@@ -15,7 +15,7 @@ func (r *orderRepository) UpdateOrder(ctx context.Context, order *serviceModel.O
 		return serviceModel.ErrOrderNotFound
 	}
 
-	repoOrder := repoConverter.OrderServiceToRepoModel(order)
+	repoOrder := repoConverter.ToRepoOrder(order)
 	r.orders[order.OrderUUID] = repoOrder
 
 	return nil

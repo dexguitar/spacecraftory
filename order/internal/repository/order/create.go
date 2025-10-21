@@ -13,12 +13,12 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *serviceModel.O
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	repoOrder := repoConverter.OrderServiceToRepoModel(order)
+	repoOrder := repoConverter.ToRepoOrder(order)
 
 	newOrderUUID := uuid.New().String()
 	repoOrder.OrderUUID = newOrderUUID
 
 	r.orders[newOrderUUID] = repoOrder
 
-	return repoConverter.OrderRepoToServiceModel(repoOrder), nil
+	return repoConverter.ToModelOrder(repoOrder), nil
 }

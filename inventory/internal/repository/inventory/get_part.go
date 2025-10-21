@@ -16,5 +16,5 @@ func (r *inventoryRepository) GetPart(ctx context.Context, uuid string) (*model.
 		return nil, model.ErrPartNotFound
 	}
 
-	return repoConverter.PartRepoToServiceModel(repoPart), nil
+	return repoConverter.ToModelPart(repoPart), nil
 }

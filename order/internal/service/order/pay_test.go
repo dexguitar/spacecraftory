@@ -26,9 +26,9 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			orderUUID:     "123e4567-e89b-12d3-a456-426614174000",
 			paymentMethod: model.PaymentMethodCARD,
 			order: &model.Order{
-				OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-				UserUUID:  "123e4567-e89b-12d3-a456-426614174012",
-				Status:    model.StatusPENDINGPAYMENT,
+				OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+				UserUUID:    "123e4567-e89b-12d3-a456-426614174012",
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			},
 			transactionUUID: "txn-card-123",
 		},
@@ -37,9 +37,9 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			orderUUID:     "123e4567-e89b-12d3-a456-426614174001",
 			paymentMethod: model.PaymentMethodSBP,
 			order: &model.Order{
-				OrderUUID: "123e4567-e89b-12d3-a456-426614174001",
-				UserUUID:  "123e4567-e89b-12d3-a456-426614174013",
-				Status:    model.StatusPENDINGPAYMENT,
+				OrderUUID:   "123e4567-e89b-12d3-a456-426614174001",
+				UserUUID:    "123e4567-e89b-12d3-a456-426614174013",
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			},
 			transactionUUID: "txn-sbp-456",
 		},
@@ -48,9 +48,9 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			orderUUID:     "123e4567-e89b-12d3-a456-426614174002",
 			paymentMethod: model.PaymentMethodCREDIT_CARD,
 			order: &model.Order{
-				OrderUUID: "123e4567-e89b-12d3-a456-426614174002",
-				UserUUID:  "123e4567-e89b-12d3-a456-426614174014",
-				Status:    model.StatusPENDINGPAYMENT,
+				OrderUUID:   "123e4567-e89b-12d3-a456-426614174002",
+				UserUUID:    "123e4567-e89b-12d3-a456-426614174014",
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			},
 			transactionUUID: "txn-credit-789",
 		},
@@ -59,9 +59,9 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			orderUUID:     "123e4567-e89b-12d3-a456-426614174003",
 			paymentMethod: model.PaymentMethodINVESTOR_MONEY,
 			order: &model.Order{
-				OrderUUID: "123e4567-e89b-12d3-a456-426614174003",
-				UserUUID:  "123e4567-e89b-12d3-a456-426614174015",
-				Status:    model.StatusPENDINGPAYMENT,
+				OrderUUID:   "123e4567-e89b-12d3-a456-426614174003",
+				UserUUID:    "123e4567-e89b-12d3-a456-426614174015",
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			},
 			transactionUUID: "txn-investor-abc",
 		},
@@ -70,9 +70,9 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			orderUUID:     "123e4567-e89b-12d3-a456-426614174003",
 			paymentMethod: model.PaymentMethodUNKNOWN,
 			order: &model.Order{
-				OrderUUID: "123e4567-e89b-12d3-a456-426614174003",
-				UserUUID:  "123e4567-e89b-12d3-a456-426614174015",
-				Status:    model.StatusPENDINGPAYMENT,
+				OrderUUID:   "123e4567-e89b-12d3-a456-426614174003",
+				UserUUID:    "123e4567-e89b-12d3-a456-426614174015",
+				OrderStatus: model.OrderStatusPENDINGPAYMENT,
 			},
 			transactionUUID: "txn-unknown-abc",
 		},
@@ -86,7 +86,7 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			s.paymentClient.On("PayOrder", s.ctx, tc.orderUUID, tc.order.UserUUID, tc.paymentMethod).
 				Return(tc.transactionUUID, nil).Once()
 
-			tc.order.Status = model.StatusPENDINGPAYMENT
+			tc.order.OrderStatus = model.OrderStatusPENDINGPAYMENT
 			tc.order.TransactionUUID = tc.transactionUUID
 			tc.order.PaymentMethod = tc.paymentMethod
 
@@ -125,8 +125,8 @@ func (s *OrderServiceSuite) TestPayOrderError() {
 			paymentMethod: model.PaymentMethodCARD,
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					Status:    model.StatusPAID,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					OrderStatus: model.OrderStatusPAID,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -139,8 +139,8 @@ func (s *OrderServiceSuite) TestPayOrderError() {
 			paymentMethod: model.PaymentMethodCARD,
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					Status:    model.StatusCANCELLED,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					OrderStatus: model.OrderStatusCANCELLED,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -153,9 +153,9 @@ func (s *OrderServiceSuite) TestPayOrderError() {
 			paymentMethod: model.PaymentMethodCARD,
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					UserUUID:  "123e4567-e89b-12d3-a456-426614174012",
-					Status:    model.StatusPENDINGPAYMENT,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					UserUUID:    "123e4567-e89b-12d3-a456-426614174012",
+					OrderStatus: model.OrderStatusPENDINGPAYMENT,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -171,9 +171,9 @@ func (s *OrderServiceSuite) TestPayOrderError() {
 			paymentMethod: model.PaymentMethodCARD,
 			mockSetup: func() {
 				order := &model.Order{
-					OrderUUID: "123e4567-e89b-12d3-a456-426614174000",
-					UserUUID:  "123e4567-e89b-12d3-a456-426614174012",
-					Status:    model.StatusPENDINGPAYMENT,
+					OrderUUID:   "123e4567-e89b-12d3-a456-426614174000",
+					UserUUID:    "123e4567-e89b-12d3-a456-426614174012",
+					OrderStatus: model.OrderStatusPENDINGPAYMENT,
 				}
 				s.orderRepository.On("GetOrder", s.ctx, "123e4567-e89b-12d3-a456-426614174000").
 					Return(order, nil).Once()
@@ -185,7 +185,7 @@ func (s *OrderServiceSuite) TestPayOrderError() {
 				updatedOrder := &model.Order{
 					OrderUUID:       order.OrderUUID,
 					UserUUID:        order.UserUUID,
-					Status:          model.StatusPAID,
+					OrderStatus:     model.OrderStatusPAID,
 					TransactionUUID: transactionUUID,
 					PaymentMethod:   model.PaymentMethodCARD,
 				}

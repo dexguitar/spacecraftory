@@ -18,10 +18,11 @@ func (a *api) GetPart(ctx context.Context, req *inventoryV1.GetPartRequest) (*in
 		if errors.Is(err, model.ErrPartNotFound) {
 			return nil, status.Errorf(codes.NotFound, "part with UUID %s not found", req.GetUuid())
 		}
-		return nil, status.Errorf(codes.Internal, "failed to get part: %v", err)
+
+		return nil, status.Errorf(codes.Internal, "Internal server error")
 	}
 
 	return &inventoryV1.GetPartResponse{
-		Part: converter.PartServiceModelToProto(part),
+		Part: converter.ToProtoPart(part),
 	}, nil
 }

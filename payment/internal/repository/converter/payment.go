@@ -5,7 +5,7 @@ import (
 	repoModel "github.com/dexguitar/spacecraftory/payment/internal/repository/model"
 )
 
-func PaymentInfoToRepoModel(paymentInfo *serviceModel.Payment) repoModel.Payment {
+func ToRepoPayment(paymentInfo *serviceModel.Payment) repoModel.Payment {
 	return repoModel.Payment{
 		OrderUUID:     paymentInfo.OrderUUID,
 		UserUUID:      paymentInfo.UserUUID,

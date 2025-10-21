@@ -12,7 +12,14 @@ import (
 )
 
 func (a *api) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params orderV1.PayOrderParams) (orderV1.PayOrderRes, error) {
-	paymentMethod := converter.PaymentMethodToService(req.PaymentMethod)
+	_, err := uuid.Parse(params.OrderUUID.String())
+	if err != nil {
+		return &orderV1.BadRequestError{
+			Code:    400,
+			Message: "Invalid order UUID",
+		}, nil
+	}
+	paymentMethod := converter.ToModelPaymentMethod(req.PaymentMethod)
 
 	transactionUUID, err := a.orderService.PayOrder(ctx, params.OrderUUID.String(), paymentMethod)
 	if err != nil {
@@ -34,15 +41,7 @@ func (a *api) PayOrder(ctx context.Context, req *orderV1.PayOrderRequest, params
 		}, nil
 	}
 
-	txUUID, err := uuid.Parse(transactionUUID)
-	if err != nil {
-		return &orderV1.InternalServerError{
-			Code:    500,
-			Message: "Failed to parse transaction UUID",
-		}, nil
-	}
-
 	return &orderV1.PayOrderResponse{
-		TransactionUUID: txUUID,
+		TransactionUUID: converter.ToProtoTransactionUUID(transactionUUID),
 	}, nil
 }

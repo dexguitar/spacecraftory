@@ -12,7 +12,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID string, paymentMethod 
 		return "", err
 	}
 
-	if order.Status == model.StatusPAID || order.Status == model.StatusCANCELLED {
+	if order.OrderStatus == model.OrderStatusPAID || order.OrderStatus == model.OrderStatusCANCELLED {
 		return "", model.ErrInvalidOrderStatus
 	}
 
@@ -21,7 +21,7 @@ func (s *service) PayOrder(ctx context.Context, orderUUID string, paymentMethod 
 		return "", model.ErrPaymentFailed
 	}
 
-	order.Status = model.StatusPAID
+	order.OrderStatus = model.OrderStatusPAID
 	order.TransactionUUID = transactionUUID
 	order.PaymentMethod = paymentMethod
 

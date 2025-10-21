@@ -5,7 +5,7 @@ import (
 	repoModel "github.com/dexguitar/spacecraftory/order/internal/repository/model"
 )
 
-func OrderServiceToRepoModel(serviceOrder *serviceModel.Order) *repoModel.Order {
+func ToRepoOrder(serviceOrder *serviceModel.Order) *repoModel.Order {
 	if serviceOrder == nil {
 		return nil
 	}
@@ -15,13 +15,13 @@ func OrderServiceToRepoModel(serviceOrder *serviceModel.Order) *repoModel.Order 
 		UserUUID:        serviceOrder.UserUUID,
 		PartUUIDs:       serviceOrder.PartUUIDs,
 		TotalPrice:      serviceOrder.TotalPrice,
-		Status:          serviceOrder.Status,
+		Status:          serviceOrder.OrderStatus,
 		TransactionUUID: serviceOrder.TransactionUUID,
 		PaymentMethod:   serviceOrder.PaymentMethod,
 	}
 }
 
-func OrderRepoToServiceModel(repoOrder *repoModel.Order) *serviceModel.Order {
+func ToModelOrder(repoOrder *repoModel.Order) *serviceModel.Order {
 	if repoOrder == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func OrderRepoToServiceModel(repoOrder *repoModel.Order) *serviceModel.Order {
 		UserUUID:        repoOrder.UserUUID,
 		PartUUIDs:       repoOrder.PartUUIDs,
 		TotalPrice:      repoOrder.TotalPrice,
-		Status:          repoOrder.Status,
+		OrderStatus:     repoOrder.Status,
 		TransactionUUID: repoOrder.TransactionUUID,
 		PaymentMethod:   repoOrder.PaymentMethod,
 	}

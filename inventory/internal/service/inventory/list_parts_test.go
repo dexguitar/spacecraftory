@@ -11,7 +11,7 @@ import (
 func (s *ServiceSuite) TestListPartsNoFilterSuccess() {
 	expectedParts := make([]*model.Part, 0, len(s.repoMockData))
 	for _, repoPart := range s.repoMockData {
-		expectedParts = append(expectedParts, converter.PartRepoToServiceModel(repoPart))
+		expectedParts = append(expectedParts, converter.ToModelPart(repoPart))
 	}
 
 	s.inventoryRepo.On("ListParts", s.ctx, mock.Anything).
@@ -37,13 +37,13 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 			},
 		},
 		{
@@ -53,11 +53,11 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
 			},
 		},
 		{
@@ -67,15 +67,15 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
 			},
 		},
 		{
@@ -85,13 +85,13 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 			},
 		},
 		{
@@ -101,11 +101,11 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
 			},
 		},
 		{
@@ -118,13 +118,13 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			},
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
 			},
 		},
 		{
@@ -132,17 +132,17 @@ func (s *ServiceSuite) TestListPartsSuccess() {
 			filter: nil,
 			repoReturn: func() []*model.Part {
 				return []*model.Part{
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
-					converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174003"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
+					converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174003"]),
 				}
 			},
 			expectedParts: []*model.Part{
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
-				converter.PartRepoToServiceModel(s.repoMockData["123e4567-e89b-12d3-a456-426614174003"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174000"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174001"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174002"]),
+				converter.ToModelPart(s.repoMockData["123e4567-e89b-12d3-a456-426614174003"]),
 			},
 		},
 		{

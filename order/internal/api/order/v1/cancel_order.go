@@ -4,12 +4,21 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
+
 	"github.com/dexguitar/spacecraftory/order/internal/model"
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
 )
 
 func (a *api) CancelOrder(ctx context.Context, params orderV1.CancelOrderParams) (orderV1.CancelOrderRes, error) {
-	err := a.orderService.CancelOrder(ctx, params.OrderUUID.String())
+	_, err := uuid.Parse(params.OrderUUID.String())
+	if err != nil {
+		return &orderV1.BadRequestError{
+			Code:    400,
+			Message: "Invalid order UUID",
+		}, nil
+	}
+	err = a.orderService.CancelOrder(ctx, params.OrderUUID.String())
 	if err != nil {
 		if errors.Is(err, model.ErrOrderNotFound) {
 			return &orderV1.NotFoundError{

@@ -7,7 +7,7 @@ import (
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
 )
 
-func OrderServiceModelToDto(serviceOrder *model.Order) *orderV1.OrderDto {
+func ToDtoOrder(serviceOrder *model.Order) *orderV1.OrderDto {
 	if serviceOrder == nil {
 		return nil
 	}
@@ -33,7 +33,7 @@ func OrderServiceModelToDto(serviceOrder *model.Order) *orderV1.OrderDto {
 		UserUUID:   userUUID,
 		PartUuids:  partUUIDs,
 		TotalPrice: serviceOrder.TotalPrice,
-		Status:     StatusToOpenAPI(serviceOrder.Status),
+		Status:     ToDtoStatus(serviceOrder.OrderStatus),
 	}
 
 	if serviceOrder.TransactionUUID != "" {
@@ -50,7 +50,7 @@ func OrderServiceModelToDto(serviceOrder *model.Order) *orderV1.OrderDto {
 
 	if serviceOrder.PaymentMethod != "" && serviceOrder.PaymentMethod != model.PaymentMethodUNKNOWN {
 		dto.PaymentMethod = orderV1.OptNilPaymentMethod{
-			Value: PaymentMethodToOpenAPI(serviceOrder.PaymentMethod),
+			Value: ToDtoPaymentMethod(serviceOrder.PaymentMethod),
 			Set:   true,
 			Null:  false,
 		}
@@ -59,20 +59,20 @@ func OrderServiceModelToDto(serviceOrder *model.Order) *orderV1.OrderDto {
 	return dto
 }
 
-func StatusToOpenAPI(status model.Status) orderV1.OrderStatus {
+func ToDtoStatus(status model.OrderStatus) orderV1.OrderStatus {
 	switch status {
-	case model.StatusPENDINGPAYMENT:
+	case model.OrderStatusPENDINGPAYMENT:
 		return orderV1.OrderStatusPENDINGPAYMENT
-	case model.StatusPAID:
+	case model.OrderStatusPAID:
 		return orderV1.OrderStatusPAID
-	case model.StatusCANCELLED:
+	case model.OrderStatusCANCELLED:
 		return orderV1.OrderStatusCANCELLED
 	default:
 		return orderV1.OrderStatusUNKNOWN
 	}
 }
 
-func PaymentMethodToService(apiMethod orderV1.PaymentMethod) model.PaymentMethod {
+func ToModelPaymentMethod(apiMethod orderV1.PaymentMethod) model.PaymentMethod {
 	switch apiMethod {
 	case orderV1.PaymentMethodCARD:
 		return model.PaymentMethodCARD
@@ -87,7 +87,7 @@ func PaymentMethodToService(apiMethod orderV1.PaymentMethod) model.PaymentMethod
 	}
 }
 
-func PaymentMethodToOpenAPI(serviceMethod model.PaymentMethod) orderV1.PaymentMethod {
+func ToDtoPaymentMethod(serviceMethod model.PaymentMethod) orderV1.PaymentMethod {
 	switch serviceMethod {
 	case model.PaymentMethodCARD:
 		return orderV1.PaymentMethodCARD
@@ -100,4 +100,12 @@ func PaymentMethodToOpenAPI(serviceMethod model.PaymentMethod) orderV1.PaymentMe
 	default:
 		return orderV1.PaymentMethodUNKNOWN
 	}
+}
+
+func ToProtoTransactionUUID(transactionUUID string) uuid.UUID {
+	txUUID, err := uuid.Parse(transactionUUID)
+	if err != nil {
+		return uuid.Nil
+	}
+	return txUUID
 }

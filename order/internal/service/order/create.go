@@ -29,10 +29,10 @@ func (s *service) CreateOrder(ctx context.Context, userUUID string, partUUIDs []
 	}
 
 	order := &model.Order{
-		UserUUID:   userUUID,
-		PartUUIDs:  partUUIDs,
-		TotalPrice: totalPrice,
-		Status:     model.StatusPENDINGPAYMENT,
+		UserUUID:    userUUID,
+		PartUUIDs:   partUUIDs,
+		TotalPrice:  totalPrice,
+		OrderStatus: model.OrderStatusPENDINGPAYMENT,
 	}
 
 	createdOrder, err := s.orderRepository.CreateOrder(ctx, order)

@@ -12,7 +12,7 @@ func (s *OrderServiceSuite) TestGetOrderSuccess() {
 		UserUUID:        "123e4567-e89b-12d3-a456-426614174012",
 		PartUUIDs:       []string{"part-uuid-1", "part-uuid-2"},
 		TotalPrice:      200.00,
-		Status:          model.StatusPENDINGPAYMENT,
+		OrderStatus:     model.OrderStatusPENDINGPAYMENT,
 		TransactionUUID: "",
 		PaymentMethod:   "",
 	}

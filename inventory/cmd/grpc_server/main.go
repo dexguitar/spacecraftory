@@ -14,7 +14,6 @@ import (
 	inventoryApi "github.com/dexguitar/spacecraftory/inventory/internal/api/inventory/v1"
 	"github.com/dexguitar/spacecraftory/inventory/internal/interceptor"
 	inventoryRepository "github.com/dexguitar/spacecraftory/inventory/internal/repository/inventory"
-	"github.com/dexguitar/spacecraftory/inventory/internal/repository/utils"
 	inventoryService "github.com/dexguitar/spacecraftory/inventory/internal/service/inventory"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
 )
@@ -43,9 +42,6 @@ func main() {
 	reflection.Register(s)
 
 	repo := inventoryRepository.NewInventoryRepository()
-
-	repo.InitializeMockData(utils.GenerateMockParts())
-
 	service := inventoryService.NewService(repo)
 	api := inventoryApi.NewAPI(service)
 

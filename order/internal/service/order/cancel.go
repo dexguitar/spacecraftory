@@ -12,11 +12,11 @@ func (s *service) CancelOrder(ctx context.Context, orderUUID string) error {
 		return err
 	}
 
-	if order.Status == model.StatusPAID || order.Status == model.StatusCANCELLED {
+	if order.OrderStatus == model.OrderStatusPAID || order.OrderStatus == model.OrderStatusCANCELLED {
 		return model.ErrInvalidOrderStatus
 	}
 
-	order.Status = model.StatusCANCELLED
+	order.OrderStatus = model.OrderStatusCANCELLED
 
 	if err := s.orderRepository.UpdateOrder(ctx, order); err != nil {
 		return err

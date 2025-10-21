@@ -105,7 +105,7 @@ func (s *APISuite) TestListPartsSuccess() {
 
 			expectedProtoParts := make([]*inventoryV1.Part, 0, len(tc.serviceReturn))
 			for _, servicePart := range tc.serviceReturn {
-				expectedProtoParts = append(expectedProtoParts, converter.PartServiceModelToProto(servicePart))
+				expectedProtoParts = append(expectedProtoParts, converter.ToProtoPart(servicePart))
 			}
 
 			assert.ElementsMatch(s.T(), expectedProtoParts, resp.Parts)
@@ -115,9 +115,10 @@ func (s *APISuite) TestListPartsSuccess() {
 
 func (s *APISuite) TestListPartsError() {
 	testCases := []struct {
-		name         string
-		request      *inventoryV1.ListPartsRequest
-		serviceError error
+		name             string
+		request          *inventoryV1.ListPartsRequest
+		serviceError     error
+		expectedMsgParts []string
 	}{
 		{
 			name: "Internal error with filter",
@@ -126,14 +127,16 @@ func (s *APISuite) TestListPartsError() {
 					Categories: []inventoryV1.Category{inventoryV1.Category_CATEGORY_ENGINE},
 				},
 			},
-			serviceError: errors.New("some error"),
+			serviceError:     errors.New("some error"),
+			expectedMsgParts: []string{"Internal server error"},
 		},
 		{
 			name: "Internal error without filter",
 			request: &inventoryV1.ListPartsRequest{
 				Filter: nil,
 			},
-			serviceError: errors.New("some error"),
+			serviceError:     errors.New("some error"),
+			expectedMsgParts: []string{"Internal server error"},
 		},
 	}
 
@@ -150,7 +153,9 @@ func (s *APISuite) TestListPartsError() {
 			st, ok := status.FromError(err)
 			s.Require().True(ok)
 			assert.Equal(s.T(), codes.Internal, st.Code())
-			assert.Contains(s.T(), st.Message(), "failed to list parts")
+			for _, msgPart := range tc.expectedMsgParts {
+				assert.Contains(s.T(), st.Message(), msgPart)
+			}
 		})
 	}
 }

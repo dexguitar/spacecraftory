@@ -23,7 +23,7 @@ func (s *APISuite) TestGetPartSuccess() {
 	req := &inventoryV1.GetPartRequest{Uuid: validUUID}
 	resp, err := s.api.GetPart(s.ctx, req)
 
-	protoPart := converter.PartServiceModelToProto(servicePart)
+	protoPart := converter.ToProtoPart(servicePart)
 
 	s.Require().NoError(err)
 	assert.Equal(s.T(), protoPart, resp.Part)
@@ -49,7 +49,7 @@ func (s *APISuite) TestGetPartError() {
 			uuid:             "123e4567-e89b-12d3-a456-426614174000",
 			serviceError:     errors.New("database connection failed"),
 			expectedCode:     codes.Internal,
-			expectedMsgParts: []string{"failed to get part", "database connection failed"},
+			expectedMsgParts: []string{"Internal server error"},
 		},
 	}
 

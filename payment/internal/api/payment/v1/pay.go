@@ -13,16 +13,16 @@ import (
 )
 
 func (a *api) PayOrder(ctx context.Context, req *paymentV1.PayOrderRequest) (*paymentV1.PayOrderResponse, error) {
-	payment, err := converter.PaymentDtoToServiceModel(req)
+	payment, err := converter.ToModelPayment(req)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid request details: %v", err)
+		return nil, status.Errorf(codes.InvalidArgument, "Invalid request details")
 	}
 	transactionUUID, err := a.paymentService.PayOrder(ctx, payment)
 	if err != nil {
 		if errors.Is(err, model.ErrBadRequest) {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid request details")
+			return nil, status.Errorf(codes.InvalidArgument, "Invalid request details")
 		}
-		return nil, status.Errorf(codes.Internal, "failed to pay order: %v", err)
+		return nil, status.Errorf(codes.Internal, "Internal server error")
 	}
 
 	return &paymentV1.PayOrderResponse{
