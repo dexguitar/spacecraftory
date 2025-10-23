@@ -1,0 +1,36 @@
+package order
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+
+	clientMocks "github.com/dexguitar/spacecraftory/order/internal/client/mocks"
+	"github.com/dexguitar/spacecraftory/order/internal/repository/mocks"
+)
+
+type OrderServiceSuite struct {
+	suite.Suite
+	ctx             context.Context
+	orderRepository *mocks.OrderRepository
+	inventoryClient *clientMocks.InventoryClient
+	paymentClient   *clientMocks.PaymentClient
+	service         *service
+}
+
+func (s *OrderServiceSuite) SetupTest() {
+	s.ctx = context.Background()
+	s.orderRepository = mocks.NewOrderRepository(s.T())
+	s.inventoryClient = clientMocks.NewInventoryClient(s.T())
+	s.paymentClient = clientMocks.NewPaymentClient(s.T())
+	s.service = NewService(
+		s.orderRepository,
+		s.inventoryClient,
+		s.paymentClient,
+	)
+}
+
+func TestServiceIntegration(t *testing.T) {
+	suite.Run(t, new(OrderServiceSuite))
+}

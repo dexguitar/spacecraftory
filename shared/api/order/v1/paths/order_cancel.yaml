@@ -9,6 +9,12 @@ post:
   responses:
     "204":
       description: Order cancelled successfully
+    "400":
+      description: Invalid order UUID
+      content:
+        application/json:
+          schema:
+            $ref: ../components/errors/bad_request_error.yaml
     "404":
       description: Order not found
       content:

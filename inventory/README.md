@@ -1,3 +1,4 @@
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/dexguitar/facd6b4c2386f87586848b74c73136e4/raw/coverage.json)
 # Inventory Service
 
 gRPC service with HTTP/REST gateway for managing spacecraft parts inventory. Provides operations to retrieve individual parts and list parts with flexible filtering.

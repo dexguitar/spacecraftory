@@ -25,13 +25,7 @@ message PayOrderRequest {
         (validate.rules).string.len = 36
     ];
     PaymentMethod payment_method = 3 [
-        (validate.rules).enum.defined_only = true,
-        (validate.rules).enum.in = [
-            "PAYMENT_METHOD_CARD",
-            "PAYMENT_METHOD_SBP",
-            "PAYMENT_METHOD_CREDIT_CARD",
-            "PAYMENT_METHOD_INVESTOR_MONEY"
-        ]
+        (validate.rules).enum.defined_only = true
     ];
 }
 

@@ -1,0 +1,31 @@
+package payment
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+
+	"github.com/dexguitar/spacecraftory/payment/internal/repository/mocks"
+)
+
+type ServiceSuite struct {
+	suite.Suite
+	ctx         context.Context
+	paymentRepo *mocks.PaymentRepository
+	service     *service
+}
+
+func (s *ServiceSuite) SetupTest() {
+	s.ctx = context.Background()
+
+	s.paymentRepo = mocks.NewPaymentRepository(s.T())
+
+	s.service = NewService(
+		s.paymentRepo,
+	)
+}
+
+func TestServiceIntegration(t *testing.T) {
+	suite.Run(t, new(ServiceSuite))
+}
