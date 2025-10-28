@@ -86,11 +86,15 @@ func (s *OrderServiceSuite) TestPayOrderSuccess() {
 			s.paymentClient.On("PayOrder", s.ctx, tc.orderUUID, tc.order.UserUUID, tc.paymentMethod).
 				Return(tc.transactionUUID, nil).Once()
 
-			tc.order.OrderStatus = model.OrderStatusPENDINGPAYMENT
-			tc.order.TransactionUUID = tc.transactionUUID
-			tc.order.PaymentMethod = tc.paymentMethod
+			updatedOrder := &model.Order{
+				OrderUUID:       tc.order.OrderUUID,
+				UserUUID:        tc.order.UserUUID,
+				OrderStatus:     model.OrderStatusPAID,
+				TransactionUUID: tc.transactionUUID,
+				PaymentMethod:   tc.paymentMethod,
+			}
 
-			s.orderRepository.On("UpdateOrder", s.ctx, tc.order).
+			s.orderRepository.On("UpdateOrder", s.ctx, updatedOrder).
 				Return(nil).Once()
 
 			transactionUUID, err := s.service.PayOrder(s.ctx, tc.orderUUID, tc.paymentMethod)

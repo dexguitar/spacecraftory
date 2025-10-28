@@ -1,0 +1,49 @@
+services: # Section describing the containers required for the Order service
+  postgres-order: # PostgreSQL container used for storing order data
+    image: postgres:17.0-alpine3.20
+    # Using official PostgreSQL version 17 image based on Alpine Linux
+    # This is a lightweight and fast build that saves resources
+
+    container_name: postgres-order
+    # Setting a unique container name for convenient access in CLI and debugging
+
+    environment: # Environment variables used when starting the container
+      POSTGRES_DB: order-service # Database name that will be created on startup
+      POSTGRES_USER: order-service-user # Username created in the database
+      POSTGRES_PASSWORD: order-service-password # Password for the specified user
+
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+      # Define the volume to be used for storing PostgreSQL data
+      # It preserves data between container restarts
+
+    ports:
+      - "5432:5432"
+      # Expose PostgreSQL's internal port (5432) to the host port
+      # This allows other services or tools to connect to the database
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order-service-user -d order-service"]
+      # Configure container readiness check — pg_isready checks if the database is accepting connections
+      interval: 10s # Interval between checks — every 10 seconds
+      timeout: 5s # Timeout for the check response
+      retries: 5 # After 5 consecutive failed attempts, the container is considered "unhealthy"
+
+    restart: unless-stopped
+    # Automatically restart the container if it crashes
+    # If the container was stopped manually, don't restart
+
+    networks:
+      - microservices-net
+      # Connect to the common network so other microservices (e.g., Order service) can find this container by name "postgres-order"
+
+volumes: # Volume section — defining what disk resources Docker creates and uses
+  postgres_order_data:
+  # Named volume for storing Order service data in PostgreSQL
+  # Allows preserving the database state even after container restart
+
+networks: # Network settings
+  microservices-net:
+    external: true
+    # We don't create a new network, but connect to the already existing common network "microservices-net"
+    # This network is created once in docker-compose.yml or manually via docker network create

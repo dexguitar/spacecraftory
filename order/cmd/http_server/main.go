@@ -12,6 +12,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -19,6 +23,7 @@ import (
 	inventoryClient "github.com/dexguitar/spacecraftory/order/internal/client/grpc/inventory/v1"
 	paymentClient "github.com/dexguitar/spacecraftory/order/internal/client/grpc/payment/v1"
 	customMiddleware "github.com/dexguitar/spacecraftory/order/internal/middleware"
+	"github.com/dexguitar/spacecraftory/order/internal/migrator"
 	orderRepository "github.com/dexguitar/spacecraftory/order/internal/repository/order"
 	orderService "github.com/dexguitar/spacecraftory/order/internal/service/order"
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
@@ -64,7 +69,50 @@ func main() {
 		}
 	}()
 
-	repo := orderRepository.NewOrderRepository()
+	ctx := context.Background()
+
+	err = godotenv.Load(".env")
+	if err != nil {
+		log.Printf("failed to load .env file: %v\n", err)
+		return
+	}
+
+	dbURI := os.Getenv("DB_URI")
+
+	conn, err := pgx.Connect(ctx, dbURI)
+	if err != nil {
+		log.Printf("failed to connect to database: %v\n", err)
+		return
+	}
+	defer func() {
+		if cerr := conn.Close(ctx); cerr != nil {
+			log.Printf("failed to close connection: %v", cerr)
+		}
+	}()
+
+	err = conn.Ping(ctx)
+	if err != nil {
+		log.Printf("База данных недоступна: %v\n", err)
+		return
+	}
+
+	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	migratorRunner := migrator.NewMigrator(stdlib.OpenDB(*conn.Config().Copy()), migrationsDir)
+
+	err = migratorRunner.Up()
+	if err != nil {
+		log.Printf("failed to run migrations: %v\n", err)
+		return
+	}
+
+	pool, err := pgxpool.New(ctx, dbURI)
+	if err != nil {
+		log.Printf("failed to create pool: %v\n", err)
+		return
+	}
+	defer pool.Close()
+
+	repo := orderRepository.NewOrderRepository(pool)
 
 	inventoryGrpcClient := inventoryV1.NewInventoryServiceClient(inventoryConn)
 	invClient := inventoryClient.NewInventoryClient(inventoryGrpcClient)

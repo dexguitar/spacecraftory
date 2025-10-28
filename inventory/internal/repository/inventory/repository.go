@@ -1,26 +1,43 @@
 package inventory
 
 import (
-	"sync"
+	"context"
+	"log"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/dexguitar/spacecraftory/inventory/internal/model"
 	repoModel "github.com/dexguitar/spacecraftory/inventory/internal/repository/model"
 )
 
 type inventoryRepository struct {
-	mu    sync.RWMutex
-	parts map[string]*repoModel.Part
+	db *mongo.Database
 }
 
-func NewInventoryRepository() *inventoryRepository {
-	return &inventoryRepository{
-		parts: initParts(),
+func NewInventoryRepository(db *mongo.Database) *inventoryRepository {
+	repo := &inventoryRepository{
+		db: db,
 	}
+
+	repo.initParts()
+
+	return repo
 }
 
-func initParts() map[string]*repoModel.Part {
+func (r *inventoryRepository) initParts() {
 	now := time.Now()
+
+	count, err := r.db.Collection("parts").CountDocuments(context.Background(), bson.M{})
+	if err != nil {
+		log.Printf("failed to count parts: %v\n", err)
+		return
+	}
+	if count > 0 {
+		log.Printf("✅ parts already initialized")
+		return
+	}
 
 	mockParts := map[string]*repoModel.Part{
 		"123e4567-e89b-12d3-a456-426614174000": {
@@ -113,5 +130,11 @@ func initParts() map[string]*repoModel.Part {
 		},
 	}
 
-	return mockParts
+	_, err = r.db.Collection("parts").InsertMany(context.Background(), []any{mockParts["123e4567-e89b-12d3-a456-426614174000"], mockParts["123e4567-e89b-12d3-a456-426614174001"], mockParts["123e4567-e89b-12d3-a456-426614174002"], mockParts["123e4567-e89b-12d3-a456-426614174003"]})
+	if err != nil {
+		log.Printf("failed to insert parts: %v\n", err)
+		return
+	}
+
+	log.Printf("✅ initialized 4 mock parts")
 }

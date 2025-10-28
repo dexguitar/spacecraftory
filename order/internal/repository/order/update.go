@@ -2,21 +2,28 @@ package order
 
 import (
 	"context"
+	"log"
+
+	sq "github.com/Masterminds/squirrel"
 
 	serviceModel "github.com/dexguitar/spacecraftory/order/internal/model"
-	repoConverter "github.com/dexguitar/spacecraftory/order/internal/repository/converter"
 )
 
 func (r *orderRepository) UpdateOrder(ctx context.Context, order *serviceModel.Order) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if _, ok := r.orders[order.OrderUUID]; !ok {
-		return serviceModel.ErrOrderNotFound
+	builderUpdate := sq.Update("orders").PlaceholderFormat(sq.Dollar).Set("status", order.OrderStatus).Set("transaction_uuid", order.TransactionUUID).Set("payment_method", order.PaymentMethod).Where(sq.Eq{"id": order.OrderUUID})
+	query, args, err := builderUpdate.ToSql()
+	if err != nil {
+		log.Printf("failed to build query: %v\n", serviceModel.ErrInternalServerError)
+		return err
 	}
 
-	repoOrder := repoConverter.ToRepoOrder(order)
-	r.orders[order.OrderUUID] = repoOrder
+	res, err := r.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Printf("failed to update order: %v\n", err)
+		return err
+	}
+
+	log.Printf("deleted %d rows", res.RowsAffected())
 
 	return nil
 }

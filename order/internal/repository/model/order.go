@@ -1,9 +1,11 @@
 package model
 
-import "github.com/dexguitar/spacecraftory/order/internal/model"
+import (
+	"github.com/dexguitar/spacecraftory/order/internal/model"
+)
 
 type Order struct {
-	OrderUUID       string              `db:"order_uuid"`
+	OrderUUID       string              `db:"id"`
 	UserUUID        string              `db:"user_uuid"`
 	PartUUIDs       []string            `db:"part_uuids"`
 	TotalPrice      float64             `db:"total_price"`

@@ -153,7 +153,7 @@ func (s *APISuite) TestPayOrderError() {
 				assert.Equal(s.T(), tc.expectedMessage, conflictErr.Message)
 			case *orderV1.InternalServerError:
 				internalErr, ok := resp.(*orderV1.InternalServerError)
-				s.Require().True(ok, "response should be BadRequestError")
+				s.Require().True(ok, "response should be InternalServerError")
 				assert.Equal(s.T(), tc.expectedCode, internalErr.Code)
 				assert.Equal(s.T(), tc.expectedMessage, internalErr.Message)
 			default:

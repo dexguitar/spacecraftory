@@ -1,14 +1,10 @@
 package order
 
 import (
-	"errors"
-
 	"github.com/stretchr/testify/assert"
 
 	"github.com/dexguitar/spacecraftory/order/internal/model"
 )
-
-var ErrUpdateOrder = errors.New("update_order error")
 
 func (s *OrderServiceSuite) TestCancelOrderSuccess() {
 	order := &model.Order{
@@ -99,7 +95,7 @@ func (s *OrderServiceSuite) TestCancelOrderError() {
 
 			err := s.service.CancelOrder(s.ctx, tc.orderUUID)
 
-			assert.Equal(s.T(), err.Error(), tc.expectedError.Error())
+			assert.ErrorIs(s.T(), err, tc.expectedError)
 		})
 	}
 }
