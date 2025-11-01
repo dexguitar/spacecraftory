@@ -2,7 +2,6 @@ package inventory
 
 import (
 	"context"
-	"log"
 	"slices"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,26 +30,23 @@ func (r *inventoryRepository) getAllParts(ctx context.Context) ([]*model.Part, e
 	serviceParts := make([]*model.Part, 0)
 	cursor, err := r.db.Collection("parts").Find(ctx, bson.M{})
 	if err != nil {
-		log.Printf("failed to list parts: %v\n", err)
 		return nil, err
 	}
 	defer func() {
 		if err := cursor.Close(ctx); err != nil {
-			log.Printf("failed to close cursor: %v\n", err)
+			return
 		}
 	}()
 
 	for cursor.Next(ctx) {
 		var part repoModel.Part
 		if err := cursor.Decode(&part); err != nil {
-			log.Printf("failed to decode part: %v\n", err)
 			continue
 		}
 		serviceParts = append(serviceParts, repoConverter.ToModelPart(&part))
 	}
 
 	if err := cursor.Err(); err != nil {
-		log.Printf("cursor error: %v\n", err)
 		return nil, err
 	}
 
@@ -64,26 +60,23 @@ func (r *inventoryRepository) getPartsByUUIDs(ctx context.Context, uuids []strin
 	filter := bson.M{"uuid": bson.M{"$in": uuids}}
 	cursor, err := r.db.Collection("parts").Find(ctx, filter)
 	if err != nil {
-		log.Printf("failed to find parts by UUIDs: %v\n", err)
 		return nil, err
 	}
 	defer func() {
 		if err := cursor.Close(ctx); err != nil {
-			log.Printf("failed to close cursor: %v\n", err)
+			return
 		}
 	}()
 
 	for cursor.Next(ctx) {
 		var part repoModel.Part
 		if err := cursor.Decode(&part); err != nil {
-			log.Printf("failed to decode part: %v\n", err)
 			continue
 		}
 		serviceParts = append(serviceParts, repoConverter.ToModelPart(&part))
 	}
 
 	if err := cursor.Err(); err != nil {
-		log.Printf("cursor error: %v\n", err)
 		return nil, err
 	}
 

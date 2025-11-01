@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"errors"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,7 +19,6 @@ func (r *inventoryRepository) GetPart(ctx context.Context, uuid string) (*model.
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, model.ErrPartNotFound
 		}
-		log.Printf("failed to get part: %v\n", err)
 
 		return nil, err
 	}

@@ -2,7 +2,6 @@ package order
 
 import (
 	"context"
-	"log"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -12,17 +11,21 @@ import (
 )
 
 func (r *orderRepository) GetOrder(ctx context.Context, orderUUID string) (*serviceModel.Order, error) {
-	builderSelectOne := sq.Select("id", "user_uuid", "part_uuids", "total_price", "status", "transaction_uuid", "payment_method").From("orders").PlaceholderFormat(sq.Dollar).Where(sq.Eq{"id": orderUUID}).Limit(1)
+	builderSelectOne := sq.
+		Select("id", "user_uuid", "part_uuids", "total_price", "status", "transaction_uuid", "payment_method").
+		From("orders").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{"id": orderUUID}).
+		Limit(1)
+
 	query, args, err := builderSelectOne.ToSql()
 	if err != nil {
-		log.Printf("failed to build query: %v\n", serviceModel.ErrInternalServerError)
 		return nil, err
 	}
 
 	var order model.Order
 	err = r.db.QueryRow(ctx, query, args...).Scan(&order.OrderUUID, &order.UserUUID, &order.PartUUIDs, &order.TotalPrice, &order.Status, &order.TransactionUUID, &order.PaymentMethod)
 	if err != nil {
-		log.Printf("failed to get order: %v\n", err)
 		return nil, err
 	}
 
