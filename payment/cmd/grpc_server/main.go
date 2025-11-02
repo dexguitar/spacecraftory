@@ -12,18 +12,22 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	paymentApi "github.com/dexguitar/spacecraftory/payment/internal/api/payment/v1"
+	"github.com/dexguitar/spacecraftory/payment/internal/config"
 	"github.com/dexguitar/spacecraftory/payment/internal/interceptor"
 	paymentRepository "github.com/dexguitar/spacecraftory/payment/internal/repository/payment"
 	paymentService "github.com/dexguitar/spacecraftory/payment/internal/service/payment"
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
 )
 
-const (
-	grpcPort = 50052
-)
+const configPath = "./deploy/compose/payment/.env"
 
 func main() {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	err := config.Load(configPath)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+
+	lis, err := net.Listen("tcp", config.AppConfig().PaymentGRPC.Address())
 	if err != nil {
 		log.Printf("failed to listen: %v\n", err)
 		return
@@ -49,7 +53,7 @@ func main() {
 	paymentV1.RegisterPaymentServiceServer(s, paymentApi)
 
 	go func() {
-		log.Printf("🚀 Payment gRPC server listening on port %d\n", grpcPort)
+		log.Printf("🚀 Payment gRPC server listening on %s\n", config.AppConfig().PaymentGRPC.Address())
 		err = s.Serve(lis)
 		if err != nil {
 			log.Printf("failed to serve Payment gRPC: %v\n", err)

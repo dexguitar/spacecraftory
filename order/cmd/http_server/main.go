@@ -15,13 +15,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderApi "github.com/dexguitar/spacecraftory/order/internal/api/order/v1"
 	inventoryClient "github.com/dexguitar/spacecraftory/order/internal/client/grpc/inventory/v1"
 	paymentClient "github.com/dexguitar/spacecraftory/order/internal/client/grpc/payment/v1"
+	"github.com/dexguitar/spacecraftory/order/internal/config"
 	customMiddleware "github.com/dexguitar/spacecraftory/order/internal/middleware"
 	"github.com/dexguitar/spacecraftory/order/internal/migrator"
 	orderRepository "github.com/dexguitar/spacecraftory/order/internal/repository/order"
@@ -31,18 +31,16 @@ import (
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
 )
 
-const (
-	httpPort             = "8080"
-	inventoryServiceAddr = "50051"
-	paymentServiceAddr   = "50052"
-
-	readHeaderTimeout = 5 * time.Second
-	shutdownTimeout   = 10 * time.Second
-)
+const configPath = "./deploy/compose/order/.env"
 
 func main() {
+	err := config.Load(configPath)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+
 	inventoryConn, err := grpc.NewClient(
-		fmt.Sprintf(":%s", inventoryServiceAddr),
+		fmt.Sprintf(":%s", config.AppConfig().GRPCClient.InventoryAddress()),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -56,7 +54,7 @@ func main() {
 	}()
 
 	paymentConn, err := grpc.NewClient(
-		fmt.Sprintf(":%s", paymentServiceAddr),
+		fmt.Sprintf(":%s", config.AppConfig().GRPCClient.PaymentAddress()),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -69,15 +67,10 @@ func main() {
 		}
 	}()
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
-	err = godotenv.Load(".env")
-	if err != nil {
-		log.Printf("failed to load .env file: %v\n", err)
-		return
-	}
-
-	dbURI := os.Getenv("DB_URI")
+	dbURI := config.AppConfig().Postgres.Address()
 
 	conn, err := pgx.Connect(ctx, dbURI)
 	if err != nil {
@@ -92,11 +85,11 @@ func main() {
 
 	err = conn.Ping(ctx)
 	if err != nil {
-		log.Printf("База данных недоступна: %v\n", err)
+		log.Printf("Database is unavailable: %v\n", err)
 		return
 	}
 
-	migrationsDir := os.Getenv("MIGRATIONS_DIR")
+	migrationsDir := config.AppConfig().Postgres.MigrationDirectory()
 	migratorRunner := migrator.NewMigrator(stdlib.OpenDB(*conn.Config().Copy()), migrationsDir)
 
 	err = migratorRunner.Up()
@@ -138,14 +131,15 @@ func main() {
 	mux.Mount("/", orderServer)
 
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf(":%s", httpPort),
+		Addr:              fmt.Sprintf(":%s", config.AppConfig().HTTP.Address()),
 		Handler:           mux,
-		ReadHeaderTimeout: readHeaderTimeout,
+		ReadHeaderTimeout: config.AppConfig().HTTP.ReadTimeout(),
 	}
 
 	go func() {
-		log.Printf("🚀 Order HTTP server listening on port %s\n", httpPort)
-		log.Printf("📚 API available at: http://localhost:%s/api/v1/orders\n", httpPort)
+		addr := config.AppConfig().HTTP.Address()
+		log.Printf("🚀 Order HTTP server listening on %s\n", addr)
+		log.Printf("📚 API available at: %s/api/v1/orders\n", addr)
 		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Failed to serve Order HTTP: %v\n", err)
 		}
@@ -157,7 +151,7 @@ func main() {
 	<-quit
 	log.Println("🛑 Shutting down Order server...")
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), config.AppConfig().HTTP.ReadTimeout())
 	defer cancel()
 
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {

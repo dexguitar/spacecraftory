@@ -7,10 +7,8 @@ services: # Section describing the containers required for the Order service
     container_name: postgres-order
     # Setting a unique container name for convenient access in CLI and debugging
 
-    environment: # Environment variables used when starting the container
-      POSTGRES_DB: order-service # Database name that will be created on startup
-      POSTGRES_USER: order-service-user # Username created in the database
-      POSTGRES_PASSWORD: order-service-password # Password for the specified user
+    env_file:
+      - .env
 
     volumes:
       - postgres_order_data:/var/lib/postgresql/data
@@ -18,12 +16,12 @@ services: # Section describing the containers required for the Order service
       # It preserves data between container restarts
 
     ports:
-      - "5432:5432"
-      # Expose PostgreSQL's internal port (5432) to the host port
+      - "${ORDER_EXTERNAL_POSTGRES_PORT}:${ORDER_POSTGRES_PORT}"
+      # Expose PostgreSQL's internal port to the host port
       # This allows other services or tools to connect to the database
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U order-service-user -d order-service"]
+      test: ["CMD-SHELL", "pg_isready -U ${ORDER_POSTGRES_USER} -d ${ORDER_POSTGRES_DB}"]
       # Configure container readiness check — pg_isready checks if the database is accepting connections
       interval: 10s # Interval between checks — every 10 seconds
       timeout: 5s # Timeout for the check response

@@ -3,8 +3,10 @@ module github.com/dexguitar/spacecraftory/payment
 go 1.25.2
 
 require (
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/dexguitar/spacecraftory/shared v0.0.0
 	github.com/google/uuid v1.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.76.0
 )
