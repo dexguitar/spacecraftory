@@ -10,14 +10,23 @@ func ToRepoOrder(serviceOrder *serviceModel.Order) *repoModel.Order {
 		return nil
 	}
 
+	var transactionUUID *string
+	if serviceOrder.TransactionUUID != "" {
+		transactionUUID = &serviceOrder.TransactionUUID
+	}
+
+	var paymentMethod *serviceModel.PaymentMethod
+	if serviceOrder.PaymentMethod != "" {
+		paymentMethod = &serviceOrder.PaymentMethod
+	}
+
 	return &repoModel.Order{
 		OrderUUID:       serviceOrder.OrderUUID,
 		UserUUID:        serviceOrder.UserUUID,
-		PartUUIDs:       serviceOrder.PartUUIDs,
 		TotalPrice:      serviceOrder.TotalPrice,
 		Status:          serviceOrder.OrderStatus,
-		TransactionUUID: serviceOrder.TransactionUUID,
-		PaymentMethod:   serviceOrder.PaymentMethod,
+		TransactionUUID: transactionUUID,
+		PaymentMethod:   paymentMethod,
 	}
 }
 
@@ -26,13 +35,23 @@ func ToModelOrder(repoOrder *repoModel.Order) *serviceModel.Order {
 		return nil
 	}
 
+	transactionUUID := ""
+	if repoOrder.TransactionUUID != nil {
+		transactionUUID = *repoOrder.TransactionUUID
+	}
+
+	paymentMethod := serviceModel.PaymentMethod("")
+	if repoOrder.PaymentMethod != nil {
+		paymentMethod = *repoOrder.PaymentMethod
+	}
+
 	return &serviceModel.Order{
 		OrderUUID:       repoOrder.OrderUUID,
 		UserUUID:        repoOrder.UserUUID,
-		PartUUIDs:       repoOrder.PartUUIDs,
+		PartUUIDs:       []string{}, // Will be filled by repository
 		TotalPrice:      repoOrder.TotalPrice,
 		OrderStatus:     repoOrder.Status,
-		TransactionUUID: repoOrder.TransactionUUID,
-		PaymentMethod:   repoOrder.PaymentMethod,
+		TransactionUUID: transactionUUID,
+		PaymentMethod:   paymentMethod,
 	}
 }
