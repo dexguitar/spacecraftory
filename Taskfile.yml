@@ -11,12 +11,12 @@ vars:
   PROTOC_GEN_GO_GRPC_VERSION: "v1.5.1"
   PROTOC_GEN_GRPC_GATEWAY_VERSION: "v2.27.3"
   PROTOC_GEN_VALIDATE_VERSION: "v1.2.1"
-  PROTOC_GEN_OPENAPIV2_VERSION: 'v2.26.3'
+  PROTOC_GEN_OPENAPIV2_VERSION: "v2.26.3"
   OGEN_VERSION: "v1.16.0"
   YQ_VERSION: "v4.45.2"
   MOCKERY_VERSION: "v2.53.3"
   GRPCURL_VERSION: "v1.9.3"
-  ENVSUBST_VERSION: 'v1.4.3'
+  ENVSUBST_VERSION: "v1.4.3"
 
   BIN_DIR: "{{.ROOT_DIR}}/bin"
   GOLANGCI_LINT: "{{.BIN_DIR}}/golangci-lint"
@@ -32,8 +32,8 @@ vars:
   PROTOC_GEN_OPENAPIV2: "{{.BIN_DIR}}/protoc-gen-openapiv2"
   MOCKERY: "{{.BIN_DIR}}/mockery"
   GRPCURL: "{{.BIN_DIR}}/grpcurl"
-  ENVSUBST: '{{.BIN_DIR}}/envsubst'
-  ENVDIR: '{{.ROOT_DIR}}/deploy/env'
+  ENVSUBST: "{{.BIN_DIR}}/envsubst"
+  ENVDIR: "{{.ROOT_DIR}}/deploy/env"
 
   NODE_MODULES_DIR: "{{.ROOT_DIR}}/node_modules/.bin"
   REDOCLY: "{{.NODE_MODULES_DIR}}/redocly"
@@ -42,12 +42,12 @@ vars:
   OPEN_API_ORDER_V1_BUNDLE: "{{.ROOT_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml"
 
   OPEN_API_FILES: "{{.ROOT_DIR}}/shared/api/bundles"
-  COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
+  COVERAGE_DIR: "{{.ROOT_DIR}}/coverage"
   COVERAGE_FILE: total.out
-  ORDER_MIGRATIONS_DIR: './order/migrations'
-  POSTGRES_DSN: 'postgres://order-service-user:order-service-password@localhost:5432/order-service?sslmode=disable'
+  ORDER_MIGRATIONS_DIR: "./order/migrations"
+  POSTGRES_DSN: "postgres://order-service-user:order-service-password@localhost:5432/order-service?sslmode=disable"
 
-  MODULES: assembly inventory order payment platform iam notification
+  MODULES: inventory order payment platform iam notification
   SERVICES: core,assembly,inventory,order,payment,iam,notification
 
 tasks:
@@ -301,7 +301,7 @@ tasks:
 
   mockery:gen:
     desc: "Generate mocks for interfaces using mockery"
-    deps: [ mockery:install ]
+    deps: [mockery:install]
     cmds:
       - |
         echo '🧪 Generating mocks...'
@@ -314,32 +314,32 @@ tasks:
         echo "🧪 Starting coverage calculation..."
         rm -rf {{.COVERAGE_DIR}}
         mkdir -p {{.COVERAGE_DIR}}
-        
+
         ERR=0
         for mod in {{.MODULES}}; do
           echo "📦 Processing module: $mod"
-        
+
           TARGET_PKGS=$(go list ./$mod/... \
             | grep -E '/(internal/(service|repository))' \
             | grep -vE '/(mocks|testdata|pkg|api|proto|pb|cmd)' \
             | paste -sd "," -)
-        
+
           if [ -z "$TARGET_PKGS" ]; then
             echo "⚠️  No suitable packages in $mod"
             continue
           fi
-        
+
           go test -coverpkg="$TARGET_PKGS" \
             -coverprofile={{.COVERAGE_DIR}}/$mod.out \
             -covermode=atomic \
             $(echo "$TARGET_PKGS" | tr "," " ") || ERR=1
         done
-        
+
         if [ $ERR -ne 0 ]; then
           echo "❌ Errors during tests"
           exit $ERR
         fi
-        
+
         echo
         echo "📊 Coverage for each module:"
         for mod in {{.MODULES}}; do
@@ -349,7 +349,7 @@ tasks:
             go tool cover -func="$OUTFILE" | tail -n1
           fi
         done
-        
+
         echo
         echo "📦 Merging all coverage..."
         {
@@ -357,14 +357,14 @@ tasks:
           find {{.COVERAGE_DIR}} -type f -name '*.out' ! -name '{{.COVERAGE_FILE}}' \
             -exec grep -h -v "^mode:" {} +
         } > {{.COVERAGE_DIR}}/{{.COVERAGE_FILE}}
-        
+
         echo
         echo "🧾 Total coverage for all modules:"
         go tool cover -func={{.COVERAGE_DIR}}/{{.COVERAGE_FILE}} | tail -n1
 
   coverage:html:
     desc: "Generate HTML coverage report and open it in the browser"
-    deps: [ test-coverage ]
+    deps: [test-coverage]
     cmds:
       - |
         OUTPUT={{.COVERAGE_DIR}}/coverage.html
@@ -658,63 +658,71 @@ tasks:
         echo "🎉 All API tests completed successfully!"
 
   env:install-envsubst:
-    desc: "Устанавливает envsubst в bin/"
+    desc: "Installs envsubst into bin/"
     cmds:
       - |
         [ -f {{.ENVSUBST}} ] || {
-          echo "📦 Устанавливаем envsubst версии {{.ENVSUBST_VERSION}}..."
+          echo "📦 Installing envsubst version {{.ENVSUBST_VERSION}}..."
           GOBIN={{.BIN_DIR}} go install github.com/a8m/envsubst/cmd/envsubst@{{.ENVSUBST_VERSION}}
         }
-        echo "✅ envsubst установлен: {{.ENVSUBST}}"
+        echo "✅ envsubst installed: {{.ENVSUBST}}"
 
   env:generate:
-    desc: "Генерирует .env файлы для всех сервисов из шаблонов и единого файла конфигурации"
-    deps: [ env:install-envsubst ]
+    desc: "Generates .env files for all services from templates and unified config file"
+    deps: [env:install-envsubst]
     cmds:
       - |
         ENV_FILE="{{.ENVDIR}}/.env"
         TEMPLATE_FILE="{{.ENVDIR}}/.env.template"
         SCRIPT="{{.ENVDIR}}/generate-env.sh"
-        
+
         if [ ! -f "$ENV_FILE" ]; then
           if [ -f "$TEMPLATE_FILE" ]; then
-            echo "🔄 Файл $ENV_FILE не найден, создаем из шаблона $TEMPLATE_FILE"
+            echo "🔄 File $ENV_FILE not found, creating from template $TEMPLATE_FILE"
             cp "$TEMPLATE_FILE" "$ENV_FILE"
-            echo "✅ Создан файл $ENV_FILE. Проверьте и отредактируйте значения переменных при необходимости."
+            echo "✅ Created file $ENV_FILE. Review and edit variable values as needed."
           else
-            echo "❌ Шаблон $TEMPLATE_FILE не найден!"
+            echo "❌ Template $TEMPLATE_FILE not found!"
             exit 1
           fi
         fi
-        
+
         chmod +x "$SCRIPT"
-        # Передаем список сервисов в виде строки с разделителями-запятыми
+        # Pass service list as comma-separated string
         export SERVICES="{{.SERVICES}}"
         ENV_SUBST={{.ENVSUBST}} "$SCRIPT"
 
   test-integration:
-    desc: "Запускает интеграционные тесты для указанных модулей"
+    desc: "Runs integration tests for specified modules"
     summary: |
-      Запускает интеграционные тесты для модулей, указанных через переменную MODULES.
-      Использует тег "integration" для идентификации интеграционных тестов.
+      Runs integration tests for modules specified via MODULES variable.
+      Uses "integration" tag to identify integration tests.
     cmds:
       - |
         ERR=0
-        echo "🚀 Запуск интеграционных тестов (по тегу integration) для модулей: {{.MODULES}}"
+        echo "🚀 Running integration tests (by integration tag) for modules: {{.MODULES}}"
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
-            echo "🧪 Проверка модуля $mod на наличие интеграционных тестов"
+            echo "🧪 Checking module $mod for integration tests"
             
-            # Проверяем наличие файлов с тегом integration
+            # Check for files with integration tag
             HAS_TESTS=$(grep -r "//go:build integration" $mod --include="*.go" | wc -l)
             
             if [ "$HAS_TESTS" -eq 0 ]; then
-              echo "⚠️ Модуль $mod не содержит интеграционных тестов (с тегом integration), пропускаем"
+              echo "⚠️ Module $mod does not contain integration tests (with integration tag), skipping"
               continue
             fi
             
-            echo "▶️ Запуск интеграционных тестов для $mod"
+            echo "▶️ Running integration tests for $mod"
             go test -v -tags=integration ./$mod/... || ERR=1
           fi
         done
         exit $ERR
+
+  e2e:test:inventory:
+    desc: "Runs e2e tests for Inventory service"
+    dir: inventory/tests/e2e
+    cmds:
+      - echo "🚀 Running Inventory service e2e tests..."
+      - cd ../../ && go mod tidy
+      - go test -tags=integration -v ./...

@@ -10,6 +10,11 @@ services: # Section describing the containers required for the Order service
     env_file:
       - .env
 
+    environment:
+      - POSTGRES_USER=${ORDER_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${ORDER_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${ORDER_POSTGRES_DB}
+
     volumes:
       - postgres_order_data:/var/lib/postgresql/data
       # Define the volume to be used for storing PostgreSQL data

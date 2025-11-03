@@ -4,6 +4,7 @@ go 1.25.2
 
 require (
 	github.com/Masterminds/squirrel v1.5.4
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/dexguitar/spacecraftory/shared v0.0.0
 	github.com/go-chi/chi/v5 v5.2.3
 	github.com/google/uuid v1.6.0
@@ -11,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/stretchr/testify v1.11.1
+	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.76.0
 )
 
@@ -45,7 +47,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.38.0 // indirect
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/net v0.46.0 // indirect

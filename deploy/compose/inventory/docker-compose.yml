@@ -8,6 +8,12 @@ services: # Describes the containers needed for the Inventory service
     env_file:
       - .env
 
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${INVENTORY_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${INVENTORY_MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_AUTH_DB=${INVENTORY_MONGO_AUTH_DB}
+      - MONGO_INITDB_DATABASE=${INVENTORY_MONGO_INITDB_DATABASE}
+
     volumes:
       - mongo_inventory_data:/data/db
       # Mount a local Docker volume to the MongoDB directory where all data is stored (collections, documents, etc.)

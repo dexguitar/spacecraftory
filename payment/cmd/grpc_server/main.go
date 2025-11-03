@@ -1,22 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
-	"net"
-	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	"go.uber.org/zap"
 
-	paymentApi "github.com/dexguitar/spacecraftory/payment/internal/api/payment/v1"
+	"github.com/dexguitar/spacecraftory/payment/internal/app"
 	"github.com/dexguitar/spacecraftory/payment/internal/config"
-	"github.com/dexguitar/spacecraftory/payment/internal/interceptor"
-	paymentRepository "github.com/dexguitar/spacecraftory/payment/internal/repository/payment"
-	paymentService "github.com/dexguitar/spacecraftory/payment/internal/service/payment"
-	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
+	"github.com/dexguitar/spacecraftory/platform/pkg/closer"
+	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
 )
 
 const configPath = "./deploy/compose/payment/.env"
@@ -27,45 +23,30 @@ func main() {
 		panic(fmt.Errorf("failed to load config: %w", err))
 	}
 
-	lis, err := net.Listen("tcp", config.AppConfig().PaymentGRPC.Address())
+	appCtx, appCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer appCancel()
+	defer gracefulShutdown()
+
+	closer.Configure(syscall.SIGINT, syscall.SIGTERM)
+
+	a, err := app.New(appCtx)
 	if err != nil {
-		log.Printf("failed to listen: %v\n", err)
+		logger.Error(appCtx, "❌ Failed to create application", zap.Error(err))
 		return
 	}
-	defer func() {
-		if cerr := lis.Close(); cerr != nil {
-			log.Printf("failed to close listener: %v\n", cerr)
-		}
-	}()
 
-	// Create gRPC server
-	s := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(interceptor.ValidationInterceptor()),
-	)
+	err = a.Run(appCtx)
+	if err != nil {
+		logger.Error(appCtx, "❌ Application error", zap.Error(err))
+		return
+	}
+}
 
-	// Enable reflection for debugging
-	reflection.Register(s)
+func gracefulShutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	repo := paymentRepository.NewPaymentRepository()
-	paymentService := paymentService.NewService(repo)
-	paymentApi := paymentApi.NewAPI(paymentService)
-
-	paymentV1.RegisterPaymentServiceServer(s, paymentApi)
-
-	go func() {
-		log.Printf("🚀 Payment gRPC server listening on %s\n", config.AppConfig().PaymentGRPC.Address())
-		err = s.Serve(lis)
-		if err != nil {
-			log.Printf("failed to serve Payment gRPC: %v\n", err)
-			return
-		}
-	}()
-
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("🛑 Shutting down Payment servers...")
-	s.GracefulStop()
-	log.Println("✅ Payment gRPC server stopped")
+	if err := closer.CloseAll(ctx); err != nil {
+		logger.Error(ctx, "❌ Shutdown error", zap.Error(err))
+	}
 }
