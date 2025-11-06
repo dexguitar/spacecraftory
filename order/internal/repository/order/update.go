@@ -3,20 +3,29 @@ package order
 import (
 	"context"
 
+	sq "github.com/Masterminds/squirrel"
+
 	serviceModel "github.com/dexguitar/spacecraftory/order/internal/model"
-	repoConverter "github.com/dexguitar/spacecraftory/order/internal/repository/converter"
 )
 
 func (r *orderRepository) UpdateOrder(ctx context.Context, order *serviceModel.Order) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
+	builderUpdate := sq.
+		Update("orders").
+		PlaceholderFormat(sq.Dollar).
+		Set("status", order.OrderStatus).
+		Set("transaction_uuid", order.TransactionUUID).
+		Set("payment_method", order.PaymentMethod).
+		Where(sq.Eq{"id": order.OrderUUID})
 
-	if _, ok := r.orders[order.OrderUUID]; !ok {
-		return serviceModel.ErrOrderNotFound
+	query, args, err := builderUpdate.ToSql()
+	if err != nil {
+		return err
 	}
 
-	repoOrder := repoConverter.ToRepoOrder(order)
-	r.orders[order.OrderUUID] = repoOrder
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

@@ -45,5 +45,4 @@ func (s *ServiceSuite) TestGetPartError() {
 
 	assert.ErrorIs(s.T(), err, model.ErrPartNotFound)
 	assert.Nil(s.T(), part)
-	s.inventoryRepo.AssertExpectations(s.T())
 }

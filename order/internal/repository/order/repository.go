@@ -1,18 +1,15 @@
 package order
 
 import (
-	"sync"
-
-	repoModel "github.com/dexguitar/spacecraftory/order/internal/repository/model"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type orderRepository struct {
-	mu     sync.RWMutex
-	orders map[string]*repoModel.Order
+	db *pgxpool.Pool
 }
 
-func NewOrderRepository() *orderRepository {
+func NewOrderRepository(db *pgxpool.Pool) *orderRepository {
 	return &orderRepository{
-		orders: make(map[string]*repoModel.Order),
+		db: db,
 	}
 }

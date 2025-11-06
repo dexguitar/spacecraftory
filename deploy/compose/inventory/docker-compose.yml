@@ -1,0 +1,52 @@
+services: # Describes the containers needed for the Inventory service
+  mongo-inventory: # MongoDB container — used for storing inventory data (e.g., parts, components)
+    image: mongo:7.0.5 # MongoDB image version 7.0.5
+
+    container_name: mongo-inventory
+    # Setting a convenient readable container name — useful for logs and debugging
+
+    environment: # Environment variables for MongoDB initialization
+      MONGO_INITDB_DATABASE: inventory-service # Database name that will be created on startup
+      MONGO_INITDB_ROOT_USERNAME: inventory-service-user # MongoDB root user name
+      MONGO_INITDB_ROOT_PASSWORD: inventory-service-password # Password for the root user
+
+    volumes:
+      - mongo_inventory_data:/data/db
+      # Mount a local Docker volume to the MongoDB directory where all data is stored (collections, documents, etc.)
+      # This is needed to preserve data between container restarts
+
+    ports:
+      - "27017:27017"
+      # Expose MongoDB's internal port (27017) to external port 27017
+      # This allows connecting to Mongo from external tools
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "echo 'db.runCommand({ ping: 1 }).ok' | mongosh --quiet -u inventory-service-user -p inventory-service-password --authenticationDatabase admin",
+        ]
+      # MongoDB readiness check: execute ping command via mongosh with specified username and password
+      # --quiet disables extra output so that only "1" is returned on success
+      interval: 10s # Run the check every 10 seconds
+      timeout: 5s # Maximum time to wait for the ping command to complete
+      retries: 5 # After 5 consecutive failed checks, the container is considered "unhealthy"
+
+    restart: unless-stopped
+    # Automatically restart the container if it crashes
+    # But if we stop it manually, it won't restart
+
+    networks:
+      - microservices-net
+      # Connect the container to the common network of all microservices so they can interact with each other by name
+
+volumes: # Volume section — defining the storage that Docker will create
+  mongo_inventory_data:
+  # Named volume where MongoDB data for the Inventory service will be stored
+  # It lives separately from the container and persists even after container deletion
+
+networks: # Definition of the network used
+  microservices-net:
+    external: true
+    # We don't create a new network, but connect to an external one shared by all microservices
+    # It should be created by docker-compose.yml or manually: docker network create microservices-net

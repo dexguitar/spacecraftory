@@ -39,6 +39,10 @@ vars:
   OPEN_API_ORDER_V1_BUNDLE: "{{.ROOT_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml"
 
   OPEN_API_FILES: "{{.ROOT_DIR}}/shared/api/bundles"
+  COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
+  COVERAGE_FILE: total.out
+  ORDER_MIGRATIONS_DIR: './order/migrations'
+  POSTGRES_DSN: 'postgres://order-service-user:order-service-password@localhost:5432/order-service?sslmode=disable'
 
   MODULES: assembly inventory order payment platform iam notification
 
@@ -281,7 +285,7 @@ tasks:
         }
 
   mockery:install:
-    desc: "Устанавливает mockery в ./bin"
+    desc: "Installing mockery in ./bin"
     cmds:
       - |
         [ -f {{.MOCKERY}} ] || {
@@ -292,24 +296,24 @@ tasks:
       - test -x {{.MOCKERY}}
 
   mockery:gen:
-    desc: "Генерирует моки интерфейсов с помощью mockery"
+    desc: "Generate mocks for interfaces using mockery"
     deps: [ mockery:install ]
     cmds:
       - |
-        echo '🧪 Генерация моков...'
+        echo '🧪 Generating mocks...'
         {{.MOCKERY}}
 
   test-coverage:
-    desc: "Тесты с покрытием бизнес-логики (service/repository), отчёт по каждому модулю + общий"
+    desc: "Tests with business logic coverage (service/repository), report for each module + total"
     cmds:
       - |
-        echo "🧪 Запускаем расчёт покрытия..."
+        echo "🧪 Starting coverage calculation..."
         rm -rf {{.COVERAGE_DIR}}
         mkdir -p {{.COVERAGE_DIR}}
         
         ERR=0
         for mod in {{.MODULES}}; do
-          echo "📦 Обрабатываем модуль: $mod"
+          echo "📦 Processing module: $mod"
         
           TARGET_PKGS=$(go list ./$mod/... \
             | grep -E '/(internal/(service|repository))' \
@@ -317,7 +321,7 @@ tasks:
             | paste -sd "," -)
         
           if [ -z "$TARGET_PKGS" ]; then
-            echo "⚠️  Нет подходящих пакетов в $mod"
+            echo "⚠️  No suitable packages in $mod"
             continue
           fi
         
@@ -328,12 +332,12 @@ tasks:
         done
         
         if [ $ERR -ne 0 ]; then
-          echo "❌ Ошибки во время тестов"
+          echo "❌ Errors during tests"
           exit $ERR
         fi
         
         echo
-        echo "📊 Покрытие по каждому модулю:"
+        echo "📊 Coverage for each module:"
         for mod in {{.MODULES}}; do
           OUTFILE="{{.COVERAGE_DIR}}/$mod.out"
           if [ -f "$OUTFILE" ]; then
@@ -343,7 +347,7 @@ tasks:
         done
         
         echo
-        echo "📦 Склеиваем все покрытия..."
+        echo "📦 Merging all coverage..."
         {
           echo "mode: atomic"
           find {{.COVERAGE_DIR}} -type f -name '*.out' ! -name '{{.COVERAGE_FILE}}' \
@@ -351,42 +355,98 @@ tasks:
         } > {{.COVERAGE_DIR}}/{{.COVERAGE_FILE}}
         
         echo
-        echo "🧾 Общее покрытие по всем модулям:"
+        echo "🧾 Total coverage for all modules:"
         go tool cover -func={{.COVERAGE_DIR}}/{{.COVERAGE_FILE}} | tail -n1
 
   coverage:html:
-    desc: "Генерирует HTML-отчёт покрытия и открывает его в браузере"
+    desc: "Generate HTML coverage report and open it in the browser"
     deps: [ test-coverage ]
     cmds:
       - |
         OUTPUT={{.COVERAGE_DIR}}/coverage.html
-        echo "🌐 Генерируем HTML-отчёт..."
+        echo "🌐 Generating HTML report..."
         go tool cover -html={{.COVERAGE_DIR}}/{{.COVERAGE_FILE}} -o $OUTPUT
 
-        echo "🚀 Открываем $OUTPUT"
+        echo "🚀 Opening $OUTPUT"
         if command -v open &> /dev/null; then
           open $OUTPUT  # macOS
         elif command -v xdg-open &> /dev/null; then
           xdg-open $OUTPUT  # Linux
         else
-          echo "📂 Отчёт сохранён в $OUTPUT (открой вручную)"
+          echo "📂 Report saved in $OUTPUT (open manually)"
         fi
 
   test:
-    desc: "Запускает юнит-тесты для всех модулей"
+    desc: "Run unit tests for all modules"
     summary: |
-      Запускает юнит-тесты для указанных модулей проекта.
-      Можно указать конкретные модули через переменную MODULES.
+      Run unit tests for specified modules of the project.
+      You can specify specific modules through the MODULES variable.
     cmds:
       - |
         ERR=0
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
-            echo "🧪 Тестируем модуль $mod"
+            echo "🧪 Testing module $mod"
             go test -v ./$mod/... || ERR=1
           fi
         done
         exit $ERR
+
+  up-core:
+    desc: Deploy core containers
+    dir: deploy/compose/core
+    cmds:
+      - echo "[task] 🚀 Deploying core containers"
+      - docker compose up --build --detach
+
+  down-core:
+    desc: Stop and remove core containers
+    dir: deploy/compose/core
+    cmds:
+      - echo "[task] 🛑 Stopping core containers"
+      - docker compose down --volumes
+
+  up-inventory:
+    desc: Deploy Inventory service and all its dependencies
+    dir: deploy/compose/inventory
+    cmds:
+      - echo "[task] 📦 Deploying Inventory with dependencies"
+      - docker compose up --build --detach
+
+  down-inventory:
+    desc: Stop and remove Inventory service and all its dependencies
+    dir: deploy/compose/inventory
+    cmds:
+      - echo "[task] 🛑 Stopping Inventory with dependencies"
+      - docker compose down --volumes
+
+  up-order:
+    desc: Deploy Order service and all its dependencies
+    dir: deploy/compose/order
+    cmds:
+      - echo "[task] 📦 Deploying Order with dependencies"
+      - docker compose up --build --detach
+
+  down-order:
+    desc: Stop and remove Order service and all its dependencies
+    dir: deploy/compose/order
+    cmds:
+      - echo "[task] 🛑 Stopping Order with dependencies"
+      - docker compose down --volumes
+
+  up-all:
+    desc: Deploy all services one by one with dependencies
+    cmds:
+      - task up-core
+      - task up-inventory
+      - task up-order
+
+  down-all:
+    desc: Stop and remove all services one by one with dependencies
+    cmds:
+      - task down-core
+      - task down-inventory
+      - task down-order
 
   grpcurl:install:
     desc: "Installs grpcurl in bin directory"
