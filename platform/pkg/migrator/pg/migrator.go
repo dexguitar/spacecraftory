@@ -1,6 +1,7 @@
-package migrator
+package pg
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/pressly/goose/v3"
@@ -18,11 +19,10 @@ func NewMigrator(db *sql.DB, migrationsDir string) *Migrator {
 	}
 }
 
-func (m *Migrator) Up() error {
-	err := goose.Up(m.db, m.migrationsDir)
-	if err != nil {
-		return err
-	}
+func (m *Migrator) Up(_ context.Context) error {
+	return goose.Up(m.db, m.migrationsDir)
+}
 
-	return nil
+func (m *Migrator) Down(_ context.Context) error {
+	return goose.Down(m.db, m.migrationsDir)
 }

@@ -5,10 +5,14 @@ services: # Describes the containers needed for the Inventory service
     container_name: mongo-inventory
     # Setting a convenient readable container name — useful for logs and debugging
 
-    environment: # Environment variables for MongoDB initialization
-      MONGO_INITDB_DATABASE: inventory-service # Database name that will be created on startup
-      MONGO_INITDB_ROOT_USERNAME: inventory-service-user # MongoDB root user name
-      MONGO_INITDB_ROOT_PASSWORD: inventory-service-password # Password for the root user
+    env_file:
+      - .env
+
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${INVENTORY_MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${INVENTORY_MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_AUTH_DB=${INVENTORY_MONGO_AUTH_DB}
+      - MONGO_INITDB_DATABASE=${INVENTORY_MONGO_INITDB_DATABASE}
 
     volumes:
       - mongo_inventory_data:/data/db
@@ -24,7 +28,7 @@ services: # Describes the containers needed for the Inventory service
       test:
         [
           "CMD-SHELL",
-          "echo 'db.runCommand({ ping: 1 }).ok' | mongosh --quiet -u inventory-service-user -p inventory-service-password --authenticationDatabase admin",
+          "echo 'db.runCommand({ ping: 1 }).ok' | mongosh --quiet -u ${INVENTORY_MONGO_INITDB_ROOT_USERNAME} -p ${INVENTORY_MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase ${INVENTORY_MONGO_AUTH_DB}",
         ]
       # MongoDB readiness check: execute ping command via mongosh with specified username and password
       # --quiet disables extra output so that only "1" is returned on success

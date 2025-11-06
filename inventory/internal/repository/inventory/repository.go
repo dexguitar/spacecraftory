@@ -16,20 +16,20 @@ type inventoryRepository struct {
 	db *mongo.Database
 }
 
-func NewInventoryRepository(db *mongo.Database) *inventoryRepository {
+func NewInventoryRepository(ctx context.Context, db *mongo.Database) *inventoryRepository {
 	repo := &inventoryRepository{
 		db: db,
 	}
 
-	repo.initParts()
+	repo.initParts(ctx)
 
 	return repo
 }
 
-func (r *inventoryRepository) initParts() {
+func (r *inventoryRepository) initParts(ctx context.Context) {
 	now := time.Now()
 
-	count, err := r.db.Collection("parts").CountDocuments(context.Background(), bson.M{})
+	count, err := r.db.Collection("parts").CountDocuments(ctx, bson.M{})
 	if err != nil {
 		log.Printf("failed to count parts: %v\n", err)
 		return
@@ -130,7 +130,7 @@ func (r *inventoryRepository) initParts() {
 		},
 	}
 
-	_, err = r.db.Collection("parts").InsertMany(context.Background(), []any{mockParts["123e4567-e89b-12d3-a456-426614174000"], mockParts["123e4567-e89b-12d3-a456-426614174001"], mockParts["123e4567-e89b-12d3-a456-426614174002"], mockParts["123e4567-e89b-12d3-a456-426614174003"]})
+	_, err = r.db.Collection("parts").InsertMany(ctx, []any{mockParts["123e4567-e89b-12d3-a456-426614174000"], mockParts["123e4567-e89b-12d3-a456-426614174001"], mockParts["123e4567-e89b-12d3-a456-426614174002"], mockParts["123e4567-e89b-12d3-a456-426614174003"]})
 	if err != nil {
 		log.Printf("failed to insert parts: %v\n", err)
 		return
