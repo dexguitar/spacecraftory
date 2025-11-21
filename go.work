@@ -1,7 +1,9 @@
 go 1.25.2
 
 use (
+	./assembly
 	./inventory
+	./notification
 	./order
 	./payment
 	./platform
