@@ -3,33 +3,34 @@ dir: "{{.InterfaceDir}}/mocks"
 filename: "mock_{{.InterfaceNameSnake}}.go"
 outpkg: "mocks"
 mockname: "{{.InterfaceName}}"
-resolve-type-alias: False
-issue-845-fix: True
 
 packages:
   # Inventory service
   github.com/dexguitar/spacecraftory/inventory/internal/repository:
-    config:
-      include-regex: ".*Repository"
+    interfaces:
+      InventoryRepository:
   github.com/dexguitar/spacecraftory/inventory/internal/service:
-    config:
-      include-regex: ".*Service"
+    interfaces:
+      InventoryService:
 
   # Payment service
   github.com/dexguitar/spacecraftory/payment/internal/repository:
-    config:
-      include-regex: ".*Repository"
+    interfaces:
+      PaymentRepository:
   github.com/dexguitar/spacecraftory/payment/internal/service:
-    config:
-      include-regex: ".*Service"
+    interfaces:
+      PaymentService:
 
   # Order service
   github.com/dexguitar/spacecraftory/order/internal/repository:
-    config:
-      include-regex: ".*Repository"
+    interfaces:
+      OrderRepository:
   github.com/dexguitar/spacecraftory/order/internal/service:
-    config:
-      include-regex: ".*Service"
+    interfaces:
+      OrderService:
+      ProducerService:
+      ConsumerService:
   github.com/dexguitar/spacecraftory/order/internal/client:
-    config:
-      include-regex: ".*Client"
+    interfaces:
+      InventoryClient:
+      PaymentClient:
