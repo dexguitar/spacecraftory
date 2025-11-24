@@ -42,7 +42,41 @@ func New(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	return a.runHTTPServer(ctx)
+	// Канал для ошибок от компонентов
+	errCh := make(chan error, 2)
+
+	// Контекст для остановки всех горутин
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Консьюмер
+	go func() {
+		if err := a.runConsumer(ctx); err != nil {
+			errCh <- fmt.Errorf("consumer crashed: %w", err)
+		}
+	}()
+
+	// HTTP сервер
+	go func() {
+		if err := a.runHTTPServer(ctx); err != nil {
+			errCh <- fmt.Errorf("http server crashed: %w", err)
+		}
+	}()
+
+	// Ожидание либо ошибки, либо завершения контекста (например, сигнал SIGINT/SIGTERM)
+	select {
+	case <-ctx.Done():
+		logger.Info(ctx, "Shutdown signal received")
+	case err := <-errCh:
+		logger.Error(ctx, "Component crashed, shutting down", zap.Error(err))
+		// Триггерим cancel, чтобы остановить второй компонент
+		cancel()
+		// Дождись завершения всех задач (если есть graceful shutdown внутри)
+		<-ctx.Done()
+		return err
+	}
+
+	return nil
 }
 
 func (a *App) initDeps(ctx context.Context) error {
@@ -168,6 +202,15 @@ func (a *App) runHTTPServer(ctx context.Context) error {
 
 	err := a.httpServer.ListenAndServe()
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) runConsumer(ctx context.Context) error {
+	err := a.diContainer.OrderConsumerService(ctx).RunConsumer(ctx)
+	if err != nil {
 		return err
 	}
 

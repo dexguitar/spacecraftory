@@ -8,6 +8,7 @@ import (
 
 	clientMocks "github.com/dexguitar/spacecraftory/order/internal/client/mocks"
 	"github.com/dexguitar/spacecraftory/order/internal/repository/mocks"
+	serviceMocks "github.com/dexguitar/spacecraftory/order/internal/service/mocks"
 )
 
 type OrderServiceSuite struct {
@@ -16,6 +17,7 @@ type OrderServiceSuite struct {
 	orderRepository *mocks.OrderRepository
 	inventoryClient *clientMocks.InventoryClient
 	paymentClient   *clientMocks.PaymentClient
+	producerService *serviceMocks.ProducerService
 	service         *service
 }
 
@@ -24,10 +26,12 @@ func (s *OrderServiceSuite) SetupTest() {
 	s.orderRepository = mocks.NewOrderRepository(s.T())
 	s.inventoryClient = clientMocks.NewInventoryClient(s.T())
 	s.paymentClient = clientMocks.NewPaymentClient(s.T())
+	s.producerService = serviceMocks.NewProducerService(s.T())
 	s.service = NewService(
 		s.orderRepository,
 		s.inventoryClient,
 		s.paymentClient,
+		s.producerService,
 	)
 }
 
