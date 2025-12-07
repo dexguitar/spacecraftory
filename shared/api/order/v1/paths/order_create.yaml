@@ -4,6 +4,8 @@ post:
   summary: Create a new order
   description: Creates a new order with the specified parts
   operationId: createOrder
+  parameters:
+    - $ref: ../headers/session_uuid.yaml
   requestBody:
     required: true
     content:

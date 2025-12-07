@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package auth.v1;
+
+import "validate/validate.proto";
+import "common/v1/session.proto";
+import "common/v1/user.proto";
+
+option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/auth/v1;auth_v1";
+
+// Login represents a login request.
+message Login {
+    string login = 1 [
+        (validate.rules).string.min_len = 1,
+        (validate.rules).string.max_len = 255
+    ];
+    string password = 2 [
+        (validate.rules).string.min_len = 1,
+        (validate.rules).string.max_len = 255
+    ];
+}
+
+// WithUserUuid represents a login request with a user UUID.
+message UserUuid {
+    string user_uuid = 1 [
+        (validate.rules).string.uuid = true
+    ];
+}
+
+// LoginType represents the type of login request.
+message LoginType {
+    oneof by {
+        Login by_login = 1;
+        UserUuid by_user_uuid = 2;
+    }
+}
+
+// LoginRequest is the request to login.
+message LoginRequest {
+    LoginType type = 1 [
+        (validate.rules).message.required = true
+    ];
+}
+
+// LoginResponse is the response containing the session UUID.
+message LoginResponse {
+    string session_uuid = 1;
+}
+
+// WhoAmIRequest is the request to get the user information.
+message WhoAmIRequest {
+    string session_uuid = 1 [
+        (validate.rules).string.len = 36
+    ];
+}
+
+// WhoAmIResponse is the response containing the user information.
+message WhoAmIResponse {
+    common.v1.Session session = 1;
+    common.v1.User user = 2;
+}
+
+service AuthService {
+    rpc Login(LoginRequest) returns (LoginResponse) {}
+    rpc WhoAmI(WhoAmIRequest) returns (WhoAmIResponse) {}
+}
+

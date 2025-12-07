@@ -5,6 +5,7 @@ import (
 
 	"github.com/dexguitar/spacecraftory/order/internal/client/converter"
 	"github.com/dexguitar/spacecraftory/order/internal/model"
+	authGrpc "github.com/dexguitar/spacecraftory/platform/pkg/middleware/grpc"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
 )
 
@@ -12,6 +13,8 @@ func (c *inventoryClient) ListParts(ctx context.Context, filter *model.PartsFilt
 	req := &inventoryV1.ListPartsRequest{
 		Filter: converter.PartsFilterToProto(filter),
 	}
+
+	ctx = authGrpc.ForwardSessionUUIDToGRPC(ctx)
 
 	resp, err := c.grpcClient.ListParts(ctx, req)
 	if err != nil {

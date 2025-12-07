@@ -1,0 +1,162 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "auth/v1/auth.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AuthService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "authv1Login": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "description": "Login represents a login request."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1LoginResponse": {
+      "type": "object",
+      "properties": {
+        "session_uuid": {
+          "type": "string"
+        }
+      },
+      "description": "LoginResponse is the response containing the session UUID."
+    },
+    "v1LoginType": {
+      "type": "object",
+      "properties": {
+        "by_login": {
+          "$ref": "#/definitions/authv1Login"
+        },
+        "by_user_uuid": {
+          "$ref": "#/definitions/v1UserUuid"
+        }
+      },
+      "description": "LoginType represents the type of login request."
+    },
+    "v1Session": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "Session represents a user session."
+    },
+    "v1User": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "info": {
+          "$ref": "#/definitions/v1UserInfo"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "User represents a user."
+    },
+    "v1UserInfo": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "notification_methods": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "UserInfo represents the information about a user."
+    },
+    "v1UserUuid": {
+      "type": "object",
+      "properties": {
+        "user_uuid": {
+          "type": "string"
+        }
+      },
+      "description": "WithUserUuid represents a login request with a user UUID."
+    },
+    "v1WhoAmIResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/v1Session"
+        },
+        "user": {
+          "$ref": "#/definitions/v1User"
+        }
+      },
+      "description": "WhoAmIResponse is the response containing the user information."
+    }
+  }
+}

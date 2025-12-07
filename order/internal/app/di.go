@@ -10,10 +10,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	orderV1API "github.com/dexguitar/spacecraftory/order/internal/api/order/v1"
+	client "github.com/dexguitar/spacecraftory/order/internal/client"
+	iamClientImpl "github.com/dexguitar/spacecraftory/order/internal/client/grpc/iam/v1"
 	inventoryClientImpl "github.com/dexguitar/spacecraftory/order/internal/client/grpc/inventory/v1"
 	paymentClientImpl "github.com/dexguitar/spacecraftory/order/internal/client/grpc/payment/v1"
-	invClient "github.com/dexguitar/spacecraftory/order/internal/client/inventory"
-	payClient "github.com/dexguitar/spacecraftory/order/internal/client/payment"
 	"github.com/dexguitar/spacecraftory/order/internal/config"
 	kafkaConverter "github.com/dexguitar/spacecraftory/order/internal/converter/kafka"
 	decoder "github.com/dexguitar/spacecraftory/order/internal/converter/kafka/decoder"
@@ -29,6 +29,7 @@ import (
 	wrappedKafkaProducer "github.com/dexguitar/spacecraftory/platform/pkg/kafka/producer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
+	authV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/auth/v1"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
 )
@@ -41,13 +42,15 @@ type diContainer struct {
 	orderProducerService service.ProducerService
 	orderConsumerService service.ConsumerService
 
-	inventoryClient invClient.InventoryClient
-	paymentClient   payClient.PaymentClient
+	inventoryClient client.InventoryClient
+	paymentClient   client.PaymentClient
+	iamClient       client.IAMClient
+	iamGRPCClient   authV1.AuthServiceClient
 
 	inventoryGRPCConn *grpc.ClientConn
 	paymentGRPCConn   *grpc.ClientConn
-
-	pgPool *pgxpool.Pool
+	iamGRPCConn       *grpc.ClientConn
+	pgPool            *pgxpool.Pool
 
 	consumerGroup          sarama.ConsumerGroup
 	orderAssembledConsumer wrappedKafka.Consumer
@@ -103,6 +106,7 @@ func (d *diContainer) OrderService(ctx context.Context) service.OrderService {
 			d.OrderRepository(ctx),
 			d.InventoryClient(ctx),
 			d.PaymentClient(ctx),
+			d.IAMClient(ctx),
 			d.OrderProducerService(ctx),
 		)
 	}
@@ -110,7 +114,7 @@ func (d *diContainer) OrderService(ctx context.Context) service.OrderService {
 	return d.orderService
 }
 
-func (d *diContainer) InventoryClient(ctx context.Context) invClient.InventoryClient {
+func (d *diContainer) InventoryClient(ctx context.Context) client.InventoryClient {
 	if d.inventoryClient == nil {
 		grpcClient := inventoryV1.NewInventoryServiceClient(d.InventoryGRPCConn(ctx))
 		d.inventoryClient = inventoryClientImpl.NewInventoryClient(grpcClient)
@@ -119,7 +123,7 @@ func (d *diContainer) InventoryClient(ctx context.Context) invClient.InventoryCl
 	return d.inventoryClient
 }
 
-func (d *diContainer) PaymentClient(ctx context.Context) payClient.PaymentClient {
+func (d *diContainer) PaymentClient(ctx context.Context) client.PaymentClient {
 	if d.paymentClient == nil {
 		grpcClient := paymentV1.NewPaymentServiceClient(d.PaymentGRPCConn(ctx))
 		d.paymentClient = paymentClientImpl.NewPaymentClient(grpcClient)
@@ -128,10 +132,26 @@ func (d *diContainer) PaymentClient(ctx context.Context) payClient.PaymentClient
 	return d.paymentClient
 }
 
+func (d *diContainer) IAMClient(ctx context.Context) client.IAMClient {
+	if d.iamClient == nil {
+		d.iamClient = iamClientImpl.NewIAMClient(d.IAMGRPCClient(ctx))
+	}
+
+	return d.iamClient
+}
+
+func (d *diContainer) IAMGRPCClient(ctx context.Context) authV1.AuthServiceClient {
+	if d.iamGRPCClient == nil {
+		d.iamGRPCClient = authV1.NewAuthServiceClient(d.IAMGRPCConn(ctx))
+	}
+
+	return d.iamGRPCClient
+}
+
 func (d *diContainer) InventoryGRPCConn(_ context.Context) *grpc.ClientConn {
 	if d.inventoryGRPCConn == nil {
 		conn, err := grpc.NewClient(
-			fmt.Sprintf(":%s", config.AppConfig().GRPCClient.InventoryAddress()),
+			config.AppConfig().GRPCClient.InventoryAddress(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
@@ -151,7 +171,7 @@ func (d *diContainer) InventoryGRPCConn(_ context.Context) *grpc.ClientConn {
 func (d *diContainer) PaymentGRPCConn(_ context.Context) *grpc.ClientConn {
 	if d.paymentGRPCConn == nil {
 		conn, err := grpc.NewClient(
-			fmt.Sprintf(":%s", config.AppConfig().GRPCClient.PaymentAddress()),
+			config.AppConfig().GRPCClient.PaymentAddress(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
 		)
 		if err != nil {
@@ -159,6 +179,26 @@ func (d *diContainer) PaymentGRPCConn(_ context.Context) *grpc.ClientConn {
 		}
 
 		closer.AddNamed("Payment gRPC connection", func(ctx context.Context) error {
+			return conn.Close()
+		})
+
+		d.paymentGRPCConn = conn
+	}
+
+	return d.paymentGRPCConn
+}
+
+func (d *diContainer) IAMGRPCConn(_ context.Context) *grpc.ClientConn {
+	if d.iamGRPCConn == nil {
+		conn, err := grpc.NewClient(
+			config.AppConfig().GRPCClient.IAMAddress(),
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("failed to connect to iam service: %s", err.Error()))
+		}
+
+		closer.AddNamed("IAM gRPC connection", func(ctx context.Context) error {
 			return conn.Close()
 		})
 
