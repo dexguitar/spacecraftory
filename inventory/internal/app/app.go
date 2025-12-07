@@ -14,6 +14,7 @@ import (
 	"github.com/dexguitar/spacecraftory/platform/pkg/closer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/grpc/health"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
+	authGrpc "github.com/dexguitar/spacecraftory/platform/pkg/middleware/grpc"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
 )
 
@@ -94,7 +95,7 @@ func (a *App) initListener(_ context.Context) error {
 }
 
 func (a *App) initGRPCServer(ctx context.Context) error {
-	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()))
+	a.grpcServer = grpc.NewServer(grpc.Creds(insecure.NewCredentials()), grpc.UnaryInterceptor(authGrpc.NewAuthInterceptor(a.diContainer.IAMGRPCClient(ctx)).Unary()))
 	closer.AddNamed("gRPC server", func(ctx context.Context) error {
 		a.grpcServer.GracefulStop()
 		return nil

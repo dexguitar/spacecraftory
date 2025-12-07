@@ -67,6 +67,8 @@ func ToDtoStatus(status model.OrderStatus) orderV1.OrderStatus {
 		return orderV1.OrderStatusPAID
 	case model.OrderStatusCANCELLED:
 		return orderV1.OrderStatusCANCELLED
+	case model.OrderStatusASSEMBLED:
+		return orderV1.OrderStatusASSEMBLED
 	default:
 		return orderV1.OrderStatusUNKNOWN
 	}

@@ -6,6 +6,7 @@ post:
   operationId: cancelOrder
   parameters:
     - $ref: ../params/order_uuid.yaml
+    - $ref: ../headers/session_uuid.yaml
   responses:
     "204":
       description: Order cancelled successfully

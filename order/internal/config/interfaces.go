@@ -19,6 +19,7 @@ type HTTPConfig interface {
 type GRPCClientConfig interface {
 	InventoryAddress() string
 	PaymentAddress() string
+	IAMAddress() string
 }
 
 type PostgresConfig interface {
