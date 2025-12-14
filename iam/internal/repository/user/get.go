@@ -13,7 +13,7 @@ import (
 )
 
 func (r *userRepository) GetUserByUUID(ctx context.Context, userUUID string) (*model.User, error) {
-	userQuery := sq.Select("id", "login", "email", "notification_methods", "password").
+	userQuery := sq.Select("id", "login", "email", "password").
 		From("users").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": userUUID})
@@ -37,11 +37,16 @@ func (r *userRepository) GetUserByUUID(ctx context.Context, userUUID string) (*m
 		return nil, err
 	}
 
-	return converter.ToModelUserFromRow(&row), nil
+	methods, err := r.getNotificationMethods(ctx, row.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ToModelUserFromRow(&row, methods), nil
 }
 
 func (r *userRepository) GetUserByLogin(ctx context.Context, login string) (*model.User, error) {
-	userQuery := sq.Select("id", "login", "email", "notification_methods", "password").
+	userQuery := sq.Select("id", "login", "email", "password").
 		From("users").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"login": login})
@@ -65,5 +70,30 @@ func (r *userRepository) GetUserByLogin(ctx context.Context, login string) (*mod
 		return nil, err
 	}
 
-	return converter.ToModelUserFromRow(&row), nil
+	methods, err := r.getNotificationMethods(ctx, row.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return converter.ToModelUserFromRow(&row, methods), nil
+}
+
+func (r *userRepository) getNotificationMethods(ctx context.Context, userUUID string) ([]repoModel.NotificationMethodRow, error) {
+	query := sq.Select("id", "user_uuid", "provider_name", "target").
+		From("notification_methods").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{"user_uuid": userUUID})
+
+	sql, args, err := query.ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := r.db.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	return pgx.CollectRows(rows, pgx.RowToStructByName[repoModel.NotificationMethodRow])
 }

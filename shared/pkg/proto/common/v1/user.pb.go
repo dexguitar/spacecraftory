@@ -22,19 +22,72 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// // NotificationMethod represents a notification method for communication with the user.
+type NotificationMethod struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProviderName  string                 `protobuf:"bytes,1,opt,name=provider_name,json=providerName,proto3" json:"provider_name,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NotificationMethod) Reset() {
+	*x = NotificationMethod{}
+	mi := &file_common_v1_user_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NotificationMethod) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NotificationMethod) ProtoMessage() {}
+
+func (x *NotificationMethod) ProtoReflect() protoreflect.Message {
+	mi := &file_common_v1_user_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NotificationMethod.ProtoReflect.Descriptor instead.
+func (*NotificationMethod) Descriptor() ([]byte, []int) {
+	return file_common_v1_user_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *NotificationMethod) GetProviderName() string {
+	if x != nil {
+		return x.ProviderName
+	}
+	return ""
+}
+
+func (x *NotificationMethod) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
 // UserInfo represents the information about a user.
 type UserInfo struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Login               string                 `protobuf:"bytes,1,opt,name=login,proto3" json:"login,omitempty"`
 	Email               string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	NotificationMethods []string               `protobuf:"bytes,3,rep,name=notification_methods,json=notificationMethods,proto3" json:"notification_methods,omitempty"`
+	NotificationMethods []*NotificationMethod  `protobuf:"bytes,3,rep,name=notification_methods,json=notificationMethods,proto3" json:"notification_methods,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *UserInfo) Reset() {
 	*x = UserInfo{}
-	mi := &file_common_v1_user_proto_msgTypes[0]
+	mi := &file_common_v1_user_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +99,7 @@ func (x *UserInfo) String() string {
 func (*UserInfo) ProtoMessage() {}
 
 func (x *UserInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_common_v1_user_proto_msgTypes[0]
+	mi := &file_common_v1_user_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +112,7 @@ func (x *UserInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UserInfo.ProtoReflect.Descriptor instead.
 func (*UserInfo) Descriptor() ([]byte, []int) {
-	return file_common_v1_user_proto_rawDescGZIP(), []int{0}
+	return file_common_v1_user_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *UserInfo) GetLogin() string {
@@ -76,7 +129,7 @@ func (x *UserInfo) GetEmail() string {
 	return ""
 }
 
-func (x *UserInfo) GetNotificationMethods() []string {
+func (x *UserInfo) GetNotificationMethods() []*NotificationMethod {
 	if x != nil {
 		return x.NotificationMethods
 	}
@@ -96,7 +149,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_common_v1_user_proto_msgTypes[1]
+	mi := &file_common_v1_user_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -108,7 +161,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_common_v1_user_proto_msgTypes[1]
+	mi := &file_common_v1_user_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -121,7 +174,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_common_v1_user_proto_rawDescGZIP(), []int{1}
+	return file_common_v1_user_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *User) GetUuid() string {
@@ -156,11 +209,14 @@ var File_common_v1_user_proto protoreflect.FileDescriptor
 
 const file_common_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x14common/v1/user.proto\x12\tcommon.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"i\n" +
+	"\x14common/v1/user.proto\x12\tcommon.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"Q\n" +
+	"\x12NotificationMethod\x12#\n" +
+	"\rprovider_name\x18\x01 \x01(\tR\fproviderName\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\"\x88\x01\n" +
 	"\bUserInfo\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x121\n" +
-	"\x14notification_methods\x18\x03 \x03(\tR\x13notificationMethods\"\xb9\x01\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\x12P\n" +
+	"\x14notification_methods\x18\x03 \x03(\v2\x1d.common.v1.NotificationMethodR\x13notificationMethods\"\xb9\x01\n" +
 	"\x04User\x12\x12\n" +
 	"\x04uuid\x18\x01 \x01(\tR\x04uuid\x12'\n" +
 	"\x04info\x18\x02 \x01(\v2\x13.common.v1.UserInfoR\x04info\x129\n" +
@@ -181,21 +237,23 @@ func file_common_v1_user_proto_rawDescGZIP() []byte {
 	return file_common_v1_user_proto_rawDescData
 }
 
-var file_common_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_common_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_common_v1_user_proto_goTypes = []any{
-	(*UserInfo)(nil),              // 0: common.v1.UserInfo
-	(*User)(nil),                  // 1: common.v1.User
-	(*timestamppb.Timestamp)(nil), // 2: google.protobuf.Timestamp
+	(*NotificationMethod)(nil),    // 0: common.v1.NotificationMethod
+	(*UserInfo)(nil),              // 1: common.v1.UserInfo
+	(*User)(nil),                  // 2: common.v1.User
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_common_v1_user_proto_depIdxs = []int32{
-	0, // 0: common.v1.User.info:type_name -> common.v1.UserInfo
-	2, // 1: common.v1.User.created_at:type_name -> google.protobuf.Timestamp
-	2, // 2: common.v1.User.updated_at:type_name -> google.protobuf.Timestamp
-	3, // [3:3] is the sub-list for method output_type
-	3, // [3:3] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0, // 0: common.v1.UserInfo.notification_methods:type_name -> common.v1.NotificationMethod
+	1, // 1: common.v1.User.info:type_name -> common.v1.UserInfo
+	3, // 2: common.v1.User.created_at:type_name -> google.protobuf.Timestamp
+	3, // 3: common.v1.User.updated_at:type_name -> google.protobuf.Timestamp
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_common_v1_user_proto_init() }
@@ -209,7 +267,7 @@ func file_common_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_common_v1_user_proto_rawDesc), len(file_common_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

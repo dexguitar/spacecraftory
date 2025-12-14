@@ -54,6 +54,18 @@
       },
       "description": "GetUserResponse is the response containing the user information."
     },
+    "v1NotificationMethod": {
+      "type": "object",
+      "properties": {
+        "provider_name": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "description": "// NotificationMethod represents a notification method for communication with the user."
+    },
     "v1RegisterResponse": {
       "type": "object",
       "properties": {
@@ -95,7 +107,8 @@
         "notification_methods": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "$ref": "#/definitions/v1NotificationMethod"
           }
         }
       },

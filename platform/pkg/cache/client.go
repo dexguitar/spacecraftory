@@ -15,7 +15,14 @@ type RedisClient interface {
 	Exists(ctx context.Context, key string) (bool, error)
 	Expire(ctx context.Context, key string, expiration time.Duration) error
 	Ping(ctx context.Context) error
+	TxPipeline(ctx context.Context, fn func(TxPipeliner) error) error
 	SetOperator
+}
+
+type TxPipeliner interface {
+	HashSet(key string, values any) error
+	Expire(key string, expiration time.Duration) error
+	SAdd(key, value string) error
 }
 
 type SetOperator interface {

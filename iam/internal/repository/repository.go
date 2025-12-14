@@ -14,8 +14,7 @@ type UserRepository interface {
 }
 
 type CacheRepository interface {
-	Get(ctx context.Context, uuid string) (model.Session, error)
-	Set(ctx context.Context, uuid string, session model.Session, ttl time.Duration) error
-	AddSessionToUserSet(ctx context.Context, userUUID string, session model.Session) error
+	Get(ctx context.Context, uuid string) (*model.Session, error)
+	Set(ctx context.Context, session *model.Session, ttl time.Duration) error
 	Delete(ctx context.Context, uuid string) error
 }

@@ -7,16 +7,16 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/common/v1;common_v1";
 
 // // NotificationMethod represents a notification method for communication with the user.
-// message NotificationMethod {
-//     string provider_name = 1;
-//     string target = 2;
-// }
+message NotificationMethod {
+    string provider_name = 1;
+    string target = 2;
+}
 
 // UserInfo represents the information about a user.
 message UserInfo {
     string login = 1;
     string email = 2;
-    repeated string notification_methods = 3;
+    repeated NotificationMethod notification_methods = 3;
 }
 
 // User represents a user.

@@ -17,8 +17,19 @@ func ToModelUserInfo(userInfo *commonV1.UserInfo) *model.UserInfo {
 	return &model.UserInfo{
 		Login:               userInfo.GetLogin(),
 		Email:               userInfo.GetEmail(),
-		NotificationMethods: userInfo.GetNotificationMethods(),
+		NotificationMethods: toModelNotificationMethods(userInfo.GetNotificationMethods()),
 	}
+}
+
+func toModelNotificationMethods(methods []*commonV1.NotificationMethod) []model.NotificationMethod {
+	result := make([]model.NotificationMethod, 0, len(methods))
+	for _, m := range methods {
+		result = append(result, model.NotificationMethod{
+			ProviderName: m.GetProviderName(),
+			Target:       m.GetTarget(),
+		})
+	}
+	return result
 }
 
 func ToProtoUser(user *model.User) *commonV1.User {
@@ -32,6 +43,17 @@ func ToProtoUserInfo(userInfo *model.UserInfo) *commonV1.UserInfo {
 	return &commonV1.UserInfo{
 		Login:               userInfo.Login,
 		Email:               userInfo.Email,
-		NotificationMethods: userInfo.NotificationMethods,
+		NotificationMethods: toProtoNotificationMethods(userInfo.NotificationMethods),
 	}
+}
+
+func toProtoNotificationMethods(methods []model.NotificationMethod) []*commonV1.NotificationMethod {
+	result := make([]*commonV1.NotificationMethod, 0, len(methods))
+	for _, m := range methods {
+		result = append(result, &commonV1.NotificationMethod{
+			ProviderName: m.ProviderName,
+			Target:       m.Target,
+		})
+	}
+	return result
 }

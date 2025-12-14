@@ -12,10 +12,12 @@ func (s *service) WhoAmI(ctx context.Context, sessionUUID string) (*model.Sessio
 		return nil, nil, err
 	}
 
-	user, err := s.userService.GetUserByUUID(ctx, session.UserUUID)
+	user, err := s.userService.GetUser(ctx, &model.UserFilter{
+		UUID: &session.UserUUID,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return &session, user, nil
+	return session, user, nil
 }

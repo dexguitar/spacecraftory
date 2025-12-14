@@ -513,7 +513,7 @@ tasks:
         
         echo
         echo "🔑 Тест 2: Логин пользователя"
-        LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"type\":{\"by_login\":{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}}}" localhost:50053 auth.v1.AuthService/Login)
+        LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}" localhost:50053 auth.v1.AuthService/Login)
         
         if [[ -z "$LOGIN_RESPONSE" || "$LOGIN_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось войти в систему."

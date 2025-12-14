@@ -8,8 +8,8 @@ import "common/v1/user.proto";
 
 option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/auth/v1;auth_v1";
 
-// Login represents a login request.
-message Login {
+// LoginRequest is the request to login.
+message LoginRequest {
     string login = 1 [
         (validate.rules).string.min_len = 1,
         (validate.rules).string.max_len = 255
@@ -17,28 +17,6 @@ message Login {
     string password = 2 [
         (validate.rules).string.min_len = 1,
         (validate.rules).string.max_len = 255
-    ];
-}
-
-// WithUserUuid represents a login request with a user UUID.
-message UserUuid {
-    string user_uuid = 1 [
-        (validate.rules).string.uuid = true
-    ];
-}
-
-// LoginType represents the type of login request.
-message LoginType {
-    oneof by {
-        Login by_login = 1;
-        UserUuid by_user_uuid = 2;
-    }
-}
-
-// LoginRequest is the request to login.
-message LoginRequest {
-    LoginType type = 1 [
-        (validate.rules).message.required = true
     ];
 }
 

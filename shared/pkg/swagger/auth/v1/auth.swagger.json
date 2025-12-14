@@ -17,18 +17,6 @@
   ],
   "paths": {},
   "definitions": {
-    "authv1Login": {
-      "type": "object",
-      "properties": {
-        "login": {
-          "type": "string"
-        },
-        "password": {
-          "type": "string"
-        }
-      },
-      "description": "Login represents a login request."
-    },
     "protobufAny": {
       "type": "object",
       "properties": {
@@ -66,17 +54,17 @@
       },
       "description": "LoginResponse is the response containing the session UUID."
     },
-    "v1LoginType": {
+    "v1NotificationMethod": {
       "type": "object",
       "properties": {
-        "by_login": {
-          "$ref": "#/definitions/authv1Login"
+        "provider_name": {
+          "type": "string"
         },
-        "by_user_uuid": {
-          "$ref": "#/definitions/v1UserUuid"
+        "target": {
+          "type": "string"
         }
       },
-      "description": "LoginType represents the type of login request."
+      "description": "// NotificationMethod represents a notification method for communication with the user."
     },
     "v1Session": {
       "type": "object",
@@ -131,20 +119,12 @@
         "notification_methods": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "object",
+            "$ref": "#/definitions/v1NotificationMethod"
           }
         }
       },
       "description": "UserInfo represents the information about a user."
-    },
-    "v1UserUuid": {
-      "type": "object",
-      "properties": {
-        "user_uuid": {
-          "type": "string"
-        }
-      },
-      "description": "WithUserUuid represents a login request with a user UUID."
     },
     "v1WhoAmIResponse": {
       "type": "object",

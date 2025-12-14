@@ -2,33 +2,26 @@ package user
 
 import (
 	"context"
-	"errors"
 
 	"github.com/dexguitar/spacecraftory/iam/internal/model"
 )
 
-func (s *UserService) GetUserByUUID(ctx context.Context, userUUID string) (*model.User, error) {
-	user, err := s.userRepository.GetUserByUUID(ctx, userUUID)
-	if err != nil {
-		if errors.Is(err, model.ErrUserNotFound) {
-			return nil, model.ErrInvalidLoginData
-		}
-		return nil, err
+func (s *UserService) GetUser(ctx context.Context, filter *model.UserFilter) (*model.User, error) {
+	if filter == nil {
+		return nil, model.ErrInvalidFilter
 	}
 
-	return user, nil
-}
+	uuid := filter.UUID
+	if uuid != nil {
+		return s.userRepository.GetUserByUUID(ctx, *uuid)
+	}
 
-func (s *UserService) GetUserByLogin(ctx context.Context, login, password string) (*model.User, error) {
-	user, err := s.userRepository.GetUserByLogin(ctx, login)
-	if err != nil {
-		if errors.Is(err, model.ErrUserNotFound) {
-			return nil, model.ErrUserNotFound
-		}
-		return nil, err
+	login := filter.LoginData.Login
+	password := filter.LoginData.Password
+
+	if login != "" && password != "" {
+		return s.userRepository.GetUserByLogin(ctx, login)
 	}
-	if user.Password != password {
-		return nil, model.ErrInvalidLoginData
-	}
-	return user, nil
+
+	return nil, model.ErrUserNotFound
 }
