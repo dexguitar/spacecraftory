@@ -1,0 +1,8 @@
+name: X-Session-Uuid
+in: header
+required: true
+description: UUID of the session for authentication
+schema:
+  type: string
+  format: uuid
+  example: "123e4567-e89b-12d3-a456-426614174000"

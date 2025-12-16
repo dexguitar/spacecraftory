@@ -82,4 +82,3 @@ func NewProducerService(t interface {
 
 	return mock
 }
-

@@ -6,6 +6,7 @@ get:
   operationId: getOrderByUUID
   parameters:
     - $ref: ../params/order_uuid.yaml
+    - $ref: ../headers/session_uuid.yaml
   responses:
     "200":
       description: Order retrieved successfully

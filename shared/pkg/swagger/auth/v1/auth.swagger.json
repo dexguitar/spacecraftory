@@ -1,0 +1,142 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "auth/v1/auth.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "AuthService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1LoginResponse": {
+      "type": "object",
+      "properties": {
+        "session_uuid": {
+          "type": "string"
+        }
+      },
+      "description": "LoginResponse is the response containing the session UUID."
+    },
+    "v1NotificationMethod": {
+      "type": "object",
+      "properties": {
+        "provider_name": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "description": "// NotificationMethod represents a notification method for communication with the user."
+    },
+    "v1Session": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "Session represents a user session."
+    },
+    "v1User": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "info": {
+          "$ref": "#/definitions/v1UserInfo"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "User represents a user."
+    },
+    "v1UserInfo": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "notification_methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1NotificationMethod"
+          }
+        }
+      },
+      "description": "UserInfo represents the information about a user."
+    },
+    "v1WhoAmIResponse": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "$ref": "#/definitions/v1Session"
+        },
+        "user": {
+          "$ref": "#/definitions/v1User"
+        }
+      },
+      "description": "WhoAmIResponse is the response containing the user information."
+    }
+  }
+}

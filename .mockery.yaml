@@ -34,3 +34,4 @@ packages:
     interfaces:
       InventoryClient:
       PaymentClient:
+      IAMClient:

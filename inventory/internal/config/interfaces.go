@@ -13,3 +13,7 @@ type MongoConfig interface {
 	URI() string
 	DatabaseName() string
 }
+
+type IAMClientGRPCConfig interface {
+	Address() string
+}

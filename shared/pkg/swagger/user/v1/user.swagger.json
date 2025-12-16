@@ -1,0 +1,130 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "user/v1/user.proto",
+    "version": "version not set"
+  },
+  "tags": [
+    {
+      "name": "UserService"
+    }
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {},
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1GetUserResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/v1User"
+        }
+      },
+      "description": "GetUserResponse is the response containing the user information."
+    },
+    "v1NotificationMethod": {
+      "type": "object",
+      "properties": {
+        "provider_name": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        }
+      },
+      "description": "// NotificationMethod represents a notification method for communication with the user."
+    },
+    "v1RegisterResponse": {
+      "type": "object",
+      "properties": {
+        "user_uuid": {
+          "type": "string"
+        }
+      },
+      "description": "RegisterResponse is the response containing the user UUID."
+    },
+    "v1User": {
+      "type": "object",
+      "properties": {
+        "uuid": {
+          "type": "string"
+        },
+        "info": {
+          "$ref": "#/definitions/v1UserInfo"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "description": "User represents a user."
+    },
+    "v1UserInfo": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "notification_methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1NotificationMethod"
+          }
+        }
+      },
+      "description": "UserInfo represents the information about a user."
+    },
+    "v1UserRegistrationInfo": {
+      "type": "object",
+      "properties": {
+        "info": {
+          "$ref": "#/definitions/v1UserInfo"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "description": "UserRegistrationInfo represents the information needed to register a user."
+    }
+  }
+}

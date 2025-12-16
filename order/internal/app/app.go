@@ -19,6 +19,7 @@ import (
 	customMiddleware "github.com/dexguitar/spacecraftory/order/internal/middleware"
 	"github.com/dexguitar/spacecraftory/platform/pkg/closer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
+	httpAuth "github.com/dexguitar/spacecraftory/platform/pkg/middleware/http"
 	"github.com/dexguitar/spacecraftory/platform/pkg/migrator"
 	pgMigrator "github.com/dexguitar/spacecraftory/platform/pkg/migrator/pg"
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
@@ -166,6 +167,8 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 
 	mux := chi.NewRouter()
 
+	authMiddleware := httpAuth.NewAuthMiddleware(a.diContainer.IAMGRPCClient(ctx))
+	mux.Use(authMiddleware.Handle)
 	mux.Use(customMiddleware.RequestLogger)
 	mux.Use(middleware.Recoverer)
 	mux.Use(middleware.Timeout(10 * time.Second))

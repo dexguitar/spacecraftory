@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
@@ -21,7 +22,7 @@ func (r *orderRepository) CreateOrder(ctx context.Context, order *serviceModel.O
 	}
 	defer func() {
 		err = tx.Rollback(ctx)
-		if err != nil {
+		if err != nil && !errors.Is(err, pgx.ErrTxClosed) {
 			log.Printf("failed to rollback transaction: %v", err)
 		}
 	}()

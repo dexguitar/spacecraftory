@@ -17,6 +17,7 @@ type OrderServiceSuite struct {
 	orderRepository *mocks.OrderRepository
 	inventoryClient *clientMocks.InventoryClient
 	paymentClient   *clientMocks.PaymentClient
+	iamClient       *clientMocks.IAMClient
 	producerService *serviceMocks.ProducerService
 	service         *service
 }
@@ -31,6 +32,7 @@ func (s *OrderServiceSuite) SetupTest() {
 		s.orderRepository,
 		s.inventoryClient,
 		s.paymentClient,
+		s.iamClient,
 		s.producerService,
 	)
 }

@@ -7,6 +7,7 @@ replace github.com/dexguitar/spacecraftory/shared => ../shared
 require (
 	github.com/IBM/sarama v1.46.3
 	github.com/caarlos0/env/v11 v11.3.1
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.27.1

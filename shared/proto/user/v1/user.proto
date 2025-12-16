@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "validate/validate.proto";
+import "common/v1/user.proto";
+
+
+option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/user/v1;user_v1";
+
+// UserRegistrationInfo represents the information needed to register a user.
+message UserRegistrationInfo {
+    common.v1.UserInfo info = 1;
+    string password = 2;
+}
+
+// RegisterRequest is the request to register a user.
+message RegisterRequest {
+    UserRegistrationInfo info = 1;
+}
+
+// RegisterResponse is the response containing the user UUID.
+message RegisterResponse {
+    string user_uuid = 1;
+}
+
+// GetUserRequest is the request to get a user by UUID.
+message GetUserRequest {
+    string user_uuid = 1 [
+        (validate.rules).string.len = 36
+    ];
+}
+
+// GetUserResponse is the response containing the user information.
+message GetUserResponse {
+    common.v1.User user = 1;
+}
+
+service UserService {
+    rpc Register(RegisterRequest) returns (RegisterResponse) {}
+    rpc GetUser(GetUserRequest) returns (GetUserResponse) {}
+}

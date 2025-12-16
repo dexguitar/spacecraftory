@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package common.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/dexguitar/spacecraftory/shared/pkg/proto/common/v1;common_v1";
+
+// // NotificationMethod represents a notification method for communication with the user.
+message NotificationMethod {
+    string provider_name = 1;
+    string target = 2;
+}
+
+// UserInfo represents the information about a user.
+message UserInfo {
+    string login = 1;
+    string email = 2;
+    repeated NotificationMethod notification_methods = 3;
+}
+
+// User represents a user.
+message User {
+    string uuid = 1;
+    UserInfo info = 2;
+    google.protobuf.Timestamp created_at = 3;
+    google.protobuf.Timestamp updated_at = 4;
+}
