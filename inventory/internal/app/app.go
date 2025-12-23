@@ -64,14 +64,25 @@ func (a *App) initDI(_ context.Context) error {
 }
 
 func (a *App) initLogger(_ context.Context) error {
-	return logger.Init(
-		config.AppConfig().Logger.Level(),
-		config.AppConfig().Logger.AsJson(),
-	)
+	cfg := config.AppConfig().Logger
+	if cfg.OtelEndpoint() != "" {
+		return logger.InitWithOTLP(
+			cfg.Level(),
+			cfg.AsJson(),
+			cfg.OtelEndpoint(),
+			cfg.ServiceName(),
+			"dev",
+		)
+	}
+
+	return logger.Init(cfg.Level(), cfg.AsJson())
 }
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	closer.AddNamed("Logger", func(ctx context.Context) error {
+		return logger.Close()
+	})
 	return nil
 }
 

@@ -9,6 +9,22 @@ import (
 type LoggerConfig interface {
 	Level() string
 	AsJson() bool
+	OtelEndpoint() string
+	ServiceName() string
+}
+
+type MetricsConfig interface {
+	CollectorEndpoint() string
+	CollectorInterval() time.Duration
+	ServiceName() string
+	Environment() string
+}
+
+type TracingConfig interface {
+	CollectorEndpoint() string
+	ServiceName() string
+	Environment() string
+	ServiceVersion() string
 }
 
 type HTTPConfig interface {

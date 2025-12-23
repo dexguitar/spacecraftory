@@ -17,7 +17,10 @@ func (c *client) TxPipeline(ctx context.Context, fn func(cache.TxPipeliner) erro
 
 		p := &txPipeliner{conn: conn}
 		if err := fn(p); err != nil {
-			conn.Do("DISCARD")
+			_, connErr := conn.Do("DISCARD")
+			if connErr != nil {
+				return connErr
+			}
 			return err
 		}
 

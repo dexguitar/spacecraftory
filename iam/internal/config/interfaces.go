@@ -5,6 +5,8 @@ import "time"
 type LoggerConfig interface {
 	Level() string
 	AsJson() bool
+	OtelEndpoint() string
+	ServiceName() string
 }
 
 type IAMGRPCConfig interface {
