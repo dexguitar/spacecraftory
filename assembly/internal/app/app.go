@@ -2,13 +2,16 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 
 	"github.com/dexguitar/spacecraftory/assembly/internal/config"
+	assemblyMetrics "github.com/dexguitar/spacecraftory/assembly/internal/metrics"
 	"github.com/dexguitar/spacecraftory/platform/pkg/closer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
+	"github.com/dexguitar/spacecraftory/platform/pkg/metrics"
 )
 
 type App struct {
@@ -61,6 +64,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initDI,
 		a.initLogger,
+		a.initMetrics,
 		a.initCloser,
 	}
 
@@ -80,14 +84,46 @@ func (a *App) initDI(_ context.Context) error {
 }
 
 func (a *App) initLogger(_ context.Context) error {
-	return logger.Init(
-		config.AppConfig().Logger.Level(),
-		config.AppConfig().Logger.AsJson(),
-	)
+	cfg := config.AppConfig().Logger
+	if cfg.OtelEndpoint() != "" {
+		return logger.InitWithOTLP(
+			cfg.Level(),
+			cfg.AsJson(),
+			cfg.OtelEndpoint(),
+			cfg.ServiceName(),
+			"dev",
+		)
+	}
+
+	return logger.Init(cfg.Level(), cfg.AsJson())
+}
+
+func (a *App) initMetrics(ctx context.Context) error {
+	cfg := config.AppConfig().Metrics
+	if cfg.CollectorEndpoint() == "" {
+		return nil // Metrics disabled
+	}
+
+	if err := metrics.InitProvider(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to init metrics provider: %w", err)
+	}
+
+	if err := assemblyMetrics.InitMetrics(); err != nil {
+		return fmt.Errorf("failed to init assembly metrics: %w", err)
+	}
+
+	logger.Info(ctx, "📊 Metrics initialized")
+	return nil
 }
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	closer.AddNamed("Metrics", func(ctx context.Context) error {
+		return metrics.Shutdown(ctx)
+	})
+	closer.AddNamed("Logger", func(ctx context.Context) error {
+		return logger.Close()
+	})
 	return nil
 }
 

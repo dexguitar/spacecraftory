@@ -1,0 +1,133 @@
+# =============================================================================
+# GRAFANA DASHBOARD PROVISIONING CONFIGURATION - AUTOMATIC DASHBOARD LOADING
+# =============================================================================
+#
+# Dashboard Provisioning is a mechanism for automatic dashboard loading in Grafana
+# Instead of manually creating dashboards through UI, you can prepare JSON files
+# and configure their automatic loading when Grafana starts
+#
+# Provisioning advantages:
+# 1. VERSIONING - dashboards are stored in Git along with code
+# 2. REPRODUCIBILITY - identical dashboards in different environments
+# 3. AUTOMATION - no need to configure dashboards manually
+# 4. BACKUP - dashboards are not lost when Grafana is recreated
+#
+# In our setup: App -> OpenTelemetry Collector -> Prometheus -> Grafana
+# Grafana will automatically load pre-prepared dashboards for service monitoring
+
+# API version for compatibility
+apiVersion: 1
+
+# =============================================================================
+# LIST OF DASHBOARD PROVIDERS
+# =============================================================================
+# Provider defines the source of dashboards - where Grafana will load them from
+# You can configure multiple providers for different types of dashboards
+providers:
+  # MAIN PROVIDER FOR APPLICATION DASHBOARDS
+  # Loads dashboards for monitoring services and business metrics
+  - name: "dashboards" # Provider name (displayed in Grafana logs)
+
+    # Provider type - determines how dashboards are loaded
+    # file - load from filesystem (JSON files)
+    # Alternatives: http (load via HTTP), git (from Git repository)
+    type: file
+
+    # Allow dashboard deletion through UI
+    # false - dashboards can be deleted through Grafana interface
+    # true - dashboards are protected from deletion (only through provisioning)
+    disableDeletion: false
+
+    # Interval for checking changes in seconds
+    # Grafana will check for changes in dashboard files every 10 seconds
+    # When changes are detected - automatically reloads the dashboard
+    updateIntervalSeconds: 10
+
+    # Allow dashboard changes through UI
+    # true - dashboards can be edited in Grafana interface
+    # false - dashboards are read-only (changes only through files)
+    allowUiUpdates: true
+
+    # Settings for file provider
+    options:
+      # Path to directory with dashboard JSON files
+      # Grafana will scan this directory and all subdirectories
+      # All files with .json extension will be loaded as dashboards
+      path: "/var/lib/grafana/dashboards"
+# =============================================================================
+# DASHBOARD STRUCTURE (JSON):
+# =============================================================================
+#
+# A dashboard in Grafana is a JSON file with the following structure:
+#
+# {
+#   "dashboard": {
+#     "title": "Service Metrics",              // Dashboard title
+#     "tags": ["service", "microservice"],     // Tags for search
+#     "time": {                                // Default time range
+#       "from": "now-1h",
+#       "to": "now"
+#     },
+#     "panels": [                              // Array of panels (graphs)
+#       {
+#         "title": "Request Rate",             // Panel title
+#         "type": "timeseries",                // Panel type
+#         "targets": [                         // Queries to datasource
+#           {
+#             "expr": "rate(http_requests_total[5m])",  // PromQL query
+#             "datasource": {
+#               "uid": "prometheus-uid"        // Reference to datasource
+#             }
+#           }
+#         ]
+#       }
+#     ]
+#   }
+# }
+#
+# =============================================================================
+# USEFUL METRICS FOR SERVICES:
+# =============================================================================
+#
+# 1. REQUESTS:
+#    - rate(grpc_server_handled_total[5m]) - gRPC request rate
+#    - grpc_server_handling_seconds - request processing time
+#    - histogram_quantile(0.95, grpc_server_handling_seconds_bucket) - 95th percentile
+#
+# 2. ERRORS:
+#    - rate(grpc_server_handled_total{grpc_code!="OK"}[5m]) - error rate
+#    - grpc_server_handled_total{grpc_code!="OK"} / grpc_server_handled_total - error percentage
+#
+# 3. SYSTEM:
+#    - process_resident_memory_bytes - memory usage
+#    - rate(process_cpu_seconds_total[5m]) - CPU usage
+#    - go_goroutines - number of goroutines
+#
+# 4. BUSINESS METRICS:
+#    - orders_total - number of orders created
+#    - orders_revenue_total - total revenue
+#    - assembly_duration_seconds - assembly duration histogram
+#
+# =============================================================================
+# DASHBOARD RECOMMENDATIONS:
+# =============================================================================
+#
+# 1. STRUCTURE:
+#    - Group panels logically (requests, errors, system)
+#    - Use rows to organize panels
+#    - Add descriptions to panels
+#
+# 2. TIME RANGES:
+#    - Use variables for time ranges
+#    - Configure auto-refresh
+#    - Add quick links (Quick ranges)
+#
+# 3. VARIABLES:
+#    - Create variables for filtering (instance, environment)
+#    - Use query variables for dynamic lists
+#    - Add multi-select for flexibility
+#
+# 4. ALERTS:
+#    - Set up alerts for critical metrics
+#    - Use different severity levels
+#    - Add descriptions to alerts

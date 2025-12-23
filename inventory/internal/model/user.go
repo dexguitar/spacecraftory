@@ -9,5 +9,10 @@ type User struct {
 type UserInfo struct {
 	Login               string
 	Email               string
-	NotificationMethods []string
+	NotificationMethods []NotificationMethod
+}
+
+type NotificationMethod struct {
+	ProviderName string
+	Target       string
 }

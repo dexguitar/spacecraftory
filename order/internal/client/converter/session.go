@@ -25,6 +25,17 @@ func UserInfoProtoToServiceModel(protoUserInfo *commonV1.UserInfo) *model.UserIn
 	return &model.UserInfo{
 		Login:               protoUserInfo.GetLogin(),
 		Email:               protoUserInfo.GetEmail(),
-		NotificationMethods: protoUserInfo.GetNotificationMethods(),
+		NotificationMethods: toModelNotificationMethods(protoUserInfo.GetNotificationMethods()),
 	}
+}
+
+func toModelNotificationMethods(methods []*commonV1.NotificationMethod) []model.NotificationMethod {
+	result := make([]model.NotificationMethod, 0, len(methods))
+	for _, m := range methods {
+		result = append(result, model.NotificationMethod{
+			ProviderName: m.GetProviderName(),
+			Target:       m.GetTarget(),
+		})
+	}
+	return result
 }

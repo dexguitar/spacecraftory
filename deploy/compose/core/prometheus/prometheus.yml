@@ -1,0 +1,85 @@
+# =============================================================================
+# PROMETHEUS CONFIGURATION - METRICS COLLECTION AND STORAGE SYSTEM
+# =============================================================================
+#
+# Prometheus is a time series database that:
+# 1. Collects metrics from various services (scraping)
+# 2. Stores them in an optimized format
+# 3. Provides PromQL query language for data analysis
+# 4. Can send alerts when thresholds are exceeded
+#
+# In our setup: App -> OpenTelemetry Collector -> Prometheus -> Grafana
+# OpenTelemetry Collector sends metrics to Prometheus via remote write API
+# Prometheus does NOT scrape - all data comes via remote write
+
+# =============================================================================
+# GLOBAL SETTINGS
+# =============================================================================
+# These settings apply to all Prometheus operations by default
+global:
+  # evaluation_interval - how often Prometheus checks alert rules
+  # Alert rules check conditions like "if CPU > 80% for 5 minutes - send alert"
+  # No alerts in basic scenario yet, but setting is needed for future expansion
+  evaluation_interval: 15s
+  scrape_interval: 15s
+
+# =============================================================================
+# SCRAPE CONFIGURATION
+# =============================================================================
+# In our scenario scrape_configs is MINIMAL!
+# All metrics come from OpenTelemetry Collector via remote write API
+# This means Prometheus works as a "receiver" of data,
+# not as an active scraper
+scrape_configs:
+  # Basic scraping for Prometheus itself
+  # Needed for monitoring Prometheus status
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Scraping OpenTelemetry Collector metrics
+  - job_name: "otel-collector"
+    static_configs:
+      - targets: ["otel-collector:8888"]
+
+# =============================================================================
+# ALERT RULES (RULE FILES)
+# =============================================================================
+# rule_files defines files with alert and recording rules
+# No alerts in basic scenario, but section is needed for future expansion
+rule_files:
+  # Uncomment and create alert_rules.yml file to add alerts
+  # - "alert_rules.yml"
+# =============================================================================
+# REMOTE WRITE ENDPOINT
+# =============================================================================
+# Prometheus automatically provides /api/v1/write endpoint for receiving data
+# OpenTelemetry Collector sends metrics to this endpoint
+# No additional configuration required - works out of the box
+
+# =============================================================================
+# KEY CONCEPTS FOR OUR SCENARIO:
+# =============================================================================
+#
+# 1. REMOTE WRITE vs SCRAPING:
+#    - Scraping: Prometheus actively polls services (pull model)
+#    - Remote Write: Services push data to Prometheus (push model)
+#    - We use Remote Write via OpenTelemetry Collector
+#
+# 2. DATA FLOW:
+#    - App generates metrics and sends to OpenTelemetry Collector
+#    - OpenTelemetry Collector processes and sends to Prometheus
+#    - Prometheus stores data and provides it to Grafana
+#    - Grafana visualizes data in dashboards
+#
+# 3. ADVANTAGES OF THIS APPROACH:
+#    - Centralized telemetry processing in OpenTelemetry Collector
+#    - Ability to transform data before sending to Prometheus
+#    - Buffering and retry logic when Prometheus is unavailable
+#    - Single configuration point for all telemetry types
+#
+# 4. METRICS THAT WILL BE RECEIVED:
+#    - System metrics: CPU, memory, goroutines
+#    - HTTP/gRPC metrics: request count, response time, error codes
+#    - Business metrics: orders count, revenue, assembly duration
+#    - Database metrics: query execution time, connection pool

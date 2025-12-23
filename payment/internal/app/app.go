@@ -15,6 +15,7 @@ import (
 	"github.com/dexguitar/spacecraftory/platform/pkg/closer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/grpc/health"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
+	"github.com/dexguitar/spacecraftory/platform/pkg/tracing"
 	paymentV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/payment/v1"
 )
 
@@ -43,6 +44,7 @@ func (a *App) initDeps(ctx context.Context) error {
 	inits := []func(context.Context) error{
 		a.initDI,
 		a.initLogger,
+		a.initTracing,
 		a.initCloser,
 		a.initListener,
 		a.initGRPCServer,
@@ -64,14 +66,40 @@ func (a *App) initDI(_ context.Context) error {
 }
 
 func (a *App) initLogger(_ context.Context) error {
-	return logger.Init(
-		config.AppConfig().Logger.Level(),
-		config.AppConfig().Logger.AsJson(),
-	)
+	cfg := config.AppConfig().Logger
+	if cfg.OtelEndpoint() != "" {
+		return logger.InitWithOTLP(
+			cfg.Level(),
+			cfg.AsJson(),
+			cfg.OtelEndpoint(),
+			cfg.ServiceName(),
+			"dev",
+		)
+	}
+
+	return logger.Init(cfg.Level(), cfg.AsJson())
+}
+
+func (a *App) initTracing(ctx context.Context) error {
+	cfg := config.AppConfig().Tracing
+	if cfg.CollectorEndpoint() == "" {
+		return nil // Tracing disabled
+	}
+
+	if err := tracing.InitTracer(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to init tracer: %w", err)
+	}
+
+	logger.Info(ctx, "🔍 Tracing initialized")
+	return nil
 }
 
 func (a *App) initCloser(_ context.Context) error {
 	closer.SetLogger(logger.Logger())
+	closer.AddNamed("Tracing", tracing.ShutdownTracer)
+	closer.AddNamed("Logger", func(ctx context.Context) error {
+		return logger.Close()
+	})
 	return nil
 }
 
@@ -97,7 +125,11 @@ func (a *App) initListener(_ context.Context) error {
 func (a *App) initGRPCServer(ctx context.Context) error {
 	a.grpcServer = grpc.NewServer(
 		grpc.Creds(insecure.NewCredentials()),
-		grpc.ChainUnaryInterceptor(interceptor.ValidationInterceptor()),
+		grpc.ChainUnaryInterceptor(
+			// Tracing interceptor must be first to create span for the entire request
+			tracing.UnaryServerInterceptor("payment-service"),
+			interceptor.ValidationInterceptor(),
+		),
 	)
 	closer.AddNamed("gRPC server", func(ctx context.Context) error {
 		a.grpcServer.GracefulStop()

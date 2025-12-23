@@ -1,0 +1,110 @@
+# =============================================================================
+# GRAFANA DATASOURCES CONFIGURATION - DATA SOURCES FOR VISUALIZATION
+# =============================================================================
+#
+# Datasource in Grafana is a connection to a data source (database, API)
+# Grafana can connect to Prometheus, InfluxDB, MySQL, Elasticsearch and many others
+#
+# Key concepts:
+# 1. DATASOURCE - connection to a data source
+# 2. QUERY - query to the data source (in our case PromQL)
+# 3. PANEL - visual element of a dashboard (graph, table, gauge)
+# 4. DASHBOARD - set of panels for monitoring
+# 5. PROVISIONING - automatic configuration via config files
+#
+# In our setup: App -> OpenTelemetry Collector -> Prometheus -> Grafana
+# Grafana connects to Prometheus to get metrics and visualize them
+
+# API version for compatibility
+# Grafana uses config versioning for backward compatibility
+apiVersion: 1
+
+# =============================================================================
+# LIST OF DATASOURCES
+# =============================================================================
+# Each datasource is a separate connection to a data source
+# You can configure multiple datasources of different types or to different instances
+datasources:
+  # MAIN PROMETHEUS DATASOURCE
+  # This is the main source of metrics for our monitoring system
+  - name: "Prometheus" # Name that will be displayed in Grafana UI
+
+    # Datasource type - determines how Grafana will interact with the source
+    # prometheus - built-in type for working with Prometheus via HTTP API
+    type: prometheus
+
+    # Data access mode:
+    # - proxy: Grafana server makes requests to datasource (recommended)
+    # - direct: user's browser directly accesses datasource
+    # Proxy mode is safer and allows using internal networks
+    access: proxy
+
+    # URL for connecting to Prometheus
+    # Grafana will make HTTP requests to this address
+    # In Docker Compose, prometheus is the service name, Docker resolves it to IP
+    url: "http://prometheus:9090"
+
+    # Make this datasource the default
+    # When creating new panels, this datasource will be automatically selected
+    isDefault: true
+
+    # =============================================================================
+    # AUTHENTICATION SETTINGS
+    # =============================================================================
+    # Basic Auth - simple HTTP authentication (username/password)
+    # In our case Prometheus does not require authentication
+    basicAuth: false
+
+    # =============================================================================
+    # HTTP REQUEST AND ADDITIONAL SETTINGS
+    # =============================================================================
+    # Configuration of how Grafana will make requests to Prometheus
+    jsonData:
+      # HTTP method for Prometheus requests
+      # POST is recommended for complex queries with long PromQL expressions
+      # GET is suitable for simple queries but has URL length limitations
+      httpMethod: POST
+
+    # =============================================================================
+    # DATASOURCE IDENTIFICATION
+    # =============================================================================
+    # UID (Unique Identifier) - unique datasource identifier
+    # Used in dashboard JSON files to reference this datasource
+    # Allows transferring dashboards between Grafana installations
+    uid: prometheus-uid
+# =============================================================================
+# KEY GRAFANA CONCEPTS:
+# =============================================================================
+#
+# 1. PROMQL (PROMETHEUS QUERY LANGUAGE):
+#    - rate(http_requests_total[5m]) - request rate over 5 minutes
+#    - avg(cpu_usage) by (instance) - average CPU by instances
+#    - histogram_quantile(0.95, request_duration_bucket) - 95th percentile response time
+#
+# 2. TIME INTERVALS:
+#    - [5m] - data for the last 5 minutes
+#    - [1h] - data for the last hour
+#    - [1d] - data for the last day
+#
+# 3. AGGREGATION:
+#    - sum() - sum of values
+#    - avg() - average value
+#    - max()/min() - maximum/minimum
+#    - count() - number of elements
+#
+# 4. GROUPING:
+#    - by (label) - group by label
+#    - without (label) - group excluding label
+#
+# 5. TIME FUNCTIONS:
+#    - rate() - rate of change for counters
+#    - irate() - instant rate
+#    - increase() - increase over period
+#    - delta() - change for gauge metrics
+#
+# 6. PANEL TYPES:
+#    - Time Series - time series (graphs)
+#    - Stat - single values
+#    - Gauge - indicators with thresholds
+#    - Table - tabular representation
+#    - Heatmap - heat maps for histograms
