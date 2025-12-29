@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 
+	"github.com/dexguitar/spacecraftory/order/internal/metrics"
 	"github.com/dexguitar/spacecraftory/order/internal/model"
 )
 
@@ -38,6 +39,14 @@ func (s *service) CreateOrder(ctx context.Context, userUUID string, partUUIDs []
 	createdOrder, err := s.orderRepository.CreateOrder(ctx, order)
 	if err != nil {
 		return nil, err
+	}
+
+	// Record business metrics
+	if metrics.OrdersTotal != nil {
+		metrics.OrdersTotal.Add(ctx, 1)
+	}
+	if metrics.OrdersRevenueTotal != nil {
+		metrics.OrdersRevenueTotal.Add(ctx, totalPrice)
 	}
 
 	return createdOrder, nil

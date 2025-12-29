@@ -28,6 +28,7 @@ import (
 	wrappedKafkaConsumer "github.com/dexguitar/spacecraftory/platform/pkg/kafka/consumer"
 	wrappedKafkaProducer "github.com/dexguitar/spacecraftory/platform/pkg/kafka/producer"
 	"github.com/dexguitar/spacecraftory/platform/pkg/logger"
+	"github.com/dexguitar/spacecraftory/platform/pkg/tracing"
 	orderV1 "github.com/dexguitar/spacecraftory/shared/pkg/openapi/order/v1"
 	authV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/auth/v1"
 	inventoryV1 "github.com/dexguitar/spacecraftory/shared/pkg/proto/inventory/v1"
@@ -173,6 +174,8 @@ func (d *diContainer) PaymentGRPCConn(_ context.Context) *grpc.ClientConn {
 		conn, err := grpc.NewClient(
 			config.AppConfig().GRPCClient.PaymentAddress(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			// Add tracing interceptor to propagate trace context to Payment service
+			grpc.WithUnaryInterceptor(tracing.UnaryClientInterceptor("order-service")),
 		)
 		if err != nil {
 			panic(fmt.Sprintf("failed to connect to payment service: %s", err.Error()))

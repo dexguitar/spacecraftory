@@ -3,6 +3,8 @@ package config
 type LoggerConfig interface {
 	Level() string
 	AsJson() bool
+	OtelEndpoint() string
+	ServiceName() string
 }
 
 type InventoryGRPCConfig interface {
