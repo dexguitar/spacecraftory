@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	redigo "github.com/gomodule/redigo/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	authAPI "github.com/dexguitar/spacecraftory/iam/internal/api/auth/v1"
+	extauthzAPI "github.com/dexguitar/spacecraftory/iam/internal/api/extauthz/v1"
 	userApi "github.com/dexguitar/spacecraftory/iam/internal/api/user/v1"
 	"github.com/dexguitar/spacecraftory/iam/internal/config"
 	"github.com/dexguitar/spacecraftory/iam/internal/repository"
@@ -35,6 +37,9 @@ type diContainer struct {
 	userService    service.UserService
 	userRepository repository.UserRepository
 	pgPool         *pgxpool.Pool
+
+	// Envoy External Authorization API
+	extAuthzApi authv3.AuthorizationServer
 }
 
 func NewDiContainer() *diContainer {
@@ -47,6 +52,14 @@ func (d *diContainer) AuthV1API(ctx context.Context) authV1.AuthServiceServer {
 	}
 
 	return d.authApi
+}
+
+func (d *diContainer) ExtAuthzAPI(ctx context.Context) authv3.AuthorizationServer {
+	if d.extAuthzApi == nil {
+		d.extAuthzApi = extauthzAPI.NewAPI(d.AuthService(ctx))
+	}
+
+	return d.extAuthzApi
 }
 
 func (d *diContainer) AuthService(ctx context.Context) service.AuthService {

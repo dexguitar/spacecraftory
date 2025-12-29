@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 
+	authv3 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v3"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -166,8 +167,12 @@ func (a *App) initGRPCServer(ctx context.Context) error {
 	// Register health service for health checks
 	health.RegisterService(a.grpcServer)
 
+	// Register IAM services
 	userV1.RegisterUserServiceServer(a.grpcServer, a.diContainer.UserV1API(ctx))
 	authV1.RegisterAuthServiceServer(a.grpcServer, a.diContainer.AuthV1API(ctx))
+
+	// Register Envoy External Authorization service
+	authv3.RegisterAuthorizationServer(a.grpcServer, a.diContainer.ExtAuthzAPI(ctx))
 
 	return nil
 }

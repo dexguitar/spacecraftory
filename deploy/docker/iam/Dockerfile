@@ -17,18 +17,18 @@ COPY go.work go.work.sum ./
 # Копируем go.mod и go.sum всех зависимых модулей — нужно для кэширования go mod download
 COPY platform/go.mod platform/go.sum ./platform/
 COPY shared/go.mod shared/go.sum ./shared/
-COPY inventory/go.mod inventory/go.sum ./inventory/
+COPY iam/go.mod iam/go.sum ./iam/
 
-# Отключаем go.work (он ссылается на все модули, а нам нужен только inventory)
+# Отключаем go.work (он ссылается на все модули, а нам нужен только iam)
 ENV GOWORK=off
 
 # Загружаем все зависимости, указанные в модульных файлах
-RUN go mod download -C inventory
+RUN go mod download -C iam
 
 # Копируем исходный код всех модулей — включая зависимости, так как они нужны при компиляции
 COPY platform ./platform
 COPY shared ./shared
-COPY inventory ./inventory
+COPY iam ./iam
 
 # Скачиваем grpc-health-probe — это утилита для проверки состояния gRPC-сервиса
 ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.37/grpc_health_probe-linux-amd64 ./grpc-health-probe
@@ -36,8 +36,8 @@ ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.3
 # Делаем скачанный файл исполняемым
 RUN chmod +x grpc-health-probe
 
-# Собираем бинарный файл Inventory сервиса для Linux-архитектуры без CGO
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -C inventory -o /app/app-inventory ./cmd/grpc_server/main.go
+# Собираем бинарный файл IAM сервиса для Linux-архитектуры без CGO
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -C iam -o /app/app-iam ./cmd/grpc_server/main.go
 
 
 # ============================
@@ -54,16 +54,20 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 WORKDIR /app
 
 # Копируем скомпилированный бинарник из стадии builder
-COPY --from=builder /app/app-inventory .
+COPY --from=builder /app/app-iam .
 
 # Копируем бинарь grpc-health-probe в /bin
 COPY --from=builder /app/grpc-health-probe /bin/grpc-health-probe
 
+# Копируем директорию миграций
+COPY iam/migrations ./iam/migrations
+
 # Запускаем приложение под non-root пользователем
 USER appuser
 
-# Экспонируем порт gRPC сервиса Inventory
-EXPOSE 50051
+# Экспонируем порт gRPC сервиса IAM
+EXPOSE 50053
 
 # Устанавливаем команду запуска — запускаем наш gRPC сервер
-ENTRYPOINT ["./app-inventory"]
+ENTRYPOINT ["./app-iam"]
+

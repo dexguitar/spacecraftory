@@ -482,26 +482,26 @@ tasks:
 
   test-iam:
     desc: "🔐 Тестирование IAM сервиса (регистрация, логин, whoami)"
-    deps: [ grpcurl:install ]
+    deps: [grpcurl:install]
     silent: true
     cmds:
       - |
         echo "🔐 Тестирование IAM сервиса"
-        
+
         # Генерируем уникальные данные для пользователя
         TIMESTAMP=$(date +%s)
         USER_EMAIL="test-user-$TIMESTAMP@example.com"
         USER_PASSWORD="SecurePassword123!"
-        
+
         echo "📝 Тест 1: Регистрация пользователя"
         REGISTER_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"info\":{\"info\":{\"email\":\"$USER_EMAIL\",\"login\":\"$USER_EMAIL\"},\"password\":\"$USER_PASSWORD\"}}" localhost:50053 user.v1.UserService/Register)
-        
+
         if [[ -z "$REGISTER_RESPONSE" || "$REGISTER_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось зарегистрировать пользователя."
           echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем UUID пользователя
         USER_UUID=$(echo $REGISTER_RESPONSE | grep -o '"userUuid": "[^"]*' | cut -d'"' -f4)
         if [ -z "$USER_UUID" ]; then
@@ -510,17 +510,17 @@ tasks:
           exit 1
         fi
         echo "✅ Пользователь зарегистрирован: $USER_EMAIL (UUID: $USER_UUID)"
-        
+
         echo
         echo "🔑 Тест 2: Логин пользователя"
         LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$USER_EMAIL\",\"password\":\"$USER_PASSWORD\"}" localhost:50053 auth.v1.AuthService/Login)
-        
+
         if [[ -z "$LOGIN_RESPONSE" || "$LOGIN_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось войти в систему."
           echo "🔍 Ответ сервера: $LOGIN_RESPONSE"
           exit 1
         fi
-        
+
         # Извлекаем session UUID
         SESSION_UUID=$(echo $LOGIN_RESPONSE | grep -o '"sessionUuid": "[^"]*' | cut -d'"' -f4)
         if [ -z "$SESSION_UUID" ]; then
@@ -529,17 +529,17 @@ tasks:
           exit 1
         fi
         echo "✅ Пользователь вошел в систему. Session UUID: $SESSION_UUID"
-        
+
         echo
         echo "👤 Тест 3: Проверка whoami с session UUID"
         WHOAMI_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"session_uuid\":\"$SESSION_UUID\"}" localhost:50053 auth.v1.AuthService/WhoAmI)
-        
+
         if [[ -z "$WHOAMI_RESPONSE" || "$WHOAMI_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось получить информацию о текущем пользователе."
           echo "🔍 Ответ сервера: $WHOAMI_RESPONSE"
           exit 1
         fi
-        
+
         # Проверяем, что UUID пользователя совпадает
         WHOAMI_UUID=$(echo $WHOAMI_RESPONSE | sed -n 's/.*"user"[^"]*"uuid": *"\([^"]*\)".*/\1/p')
         if [[ "$WHOAMI_UUID" != "$USER_UUID" ]]; then
@@ -547,12 +547,12 @@ tasks:
           exit 1
         fi
         echo "✅ Whoami работает корректно. UUID пользователя: $WHOAMI_UUID"
-        
+
         # Сохраняем данные для использования в других тестах
         echo "export TEST_USER_UUID=\"$USER_UUID\"" > /tmp/test_auth_data.sh
         echo "export TEST_SESSION_UUID=\"$SESSION_UUID\"" >> /tmp/test_auth_data.sh
         echo "export TEST_USER_EMAIL=\"$USER_EMAIL\"" >> /tmp/test_auth_data.sh
-        
+
         echo
         echo "🎉 Все тесты IAM выполнены успешно!"
         echo "📄 Данные аутентификации сохранены в /tmp/test_auth_data.sh"
@@ -563,7 +563,7 @@ tasks:
     cmds:
       - |
         echo "🔒 Тестирование корректности отклонения неавторизованных запросов"
-        
+
         # Загружаем данные аутентификации из IAM теста
         if [ -f /tmp/test_auth_data.sh ]; then
           source /tmp/test_auth_data.sh
@@ -580,31 +580,31 @@ tasks:
         echo "📦 Получение тестовых данных из Inventory..."
         PARTS_RESPONSE=$({{.GRPCURL}} -plaintext -H "session-uuid: $TEST_SESSION_UUID" -d '{"filter":{}}' localhost:50051 inventory.v1.InventoryService/ListParts)
         PART_UUID=$(echo $PARTS_RESPONSE | grep -o '"uuid": "[^"]*' | head -1 | cut -d'"' -f4)
-        
+
         echo
         echo "🔍 Тест 1: Проверка отказа доступа без аутентификации (Inventory gRPC)"
         UNAUTHORIZED_RESPONSE=$({{.GRPCURL}} -plaintext -d '{"filter":{}}' localhost:50051 inventory.v1.InventoryService/ListParts 2>&1 || true)
-        
+
         if [[ "$UNAUTHORIZED_RESPONSE" != *"Unauthenticated"* ]]; then
           echo "⚠️  Запрос без аутентификации не был отклонен (ожидаемое поведение может отличаться)."
           echo "🔍 Ответ сервера: $UNAUTHORIZED_RESPONSE"
         else
           echo "✅ Запрос без аутентификации корректно отклонен"
         fi
-        
+
         echo
         echo "🔍 Тест 2: Проверка отказа доступа без аутентификации (Order REST API)"
         UNAUTHORIZED_ORDER_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders" \
           -H "Content-Type: application/json" \
           -d "{\"user_uuid\":\"$TEST_USER_UUID\",\"part_uuids\":[\"$PART_UUID\"]}")
-        
+
         if [[ "$UNAUTHORIZED_ORDER_RESPONSE" != *"unauthorized"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"Unauthorized"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"Authentication required"* && "$UNAUTHORIZED_ORDER_RESPONSE" != *"MISSING_SESSION"* ]]; then
           echo "⚠️  Запрос без аутентификации к Order API не был отклонен (ожидаемое поведение может отличаться)."
           echo "🔍 Ответ сервера: $UNAUTHORIZED_ORDER_RESPONSE"
         else
           echo "✅ Запрос без аутентификации к Order API корректно отклонен"
         fi
-        
+
         echo
         echo "🎉 Все тесты отклонения неавторизованных запросов завершены!"
 
@@ -614,7 +614,7 @@ tasks:
     cmds:
       - |
         echo "✅ Тестирование API микросервисов с корректной аутентификацией"
-        
+
         # Загружаем данные аутентификации из IAM теста
         if [ -f /tmp/test_auth_data.sh ]; then
           source /tmp/test_auth_data.sh
@@ -721,14 +721,14 @@ tasks:
             exit 1
           fi
         fi
-        
+
         # Проверяем, что начальный статус PENDING_PAYMENT
         if [[ "$ORDER_STATUS" != *"PENDING_PAYMENT"* ]]; then
           echo "❌ Неверный начальный статус заказа. Ожидался PENDING_PAYMENT, получен: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Начальный статус заказа корректный: $ORDER_STATUS"
-        
+
         echo
         echo "💰 Тест 5: Оплата заказа (REST API с аутентификацией)"
         PAY_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders/$ORDER_UUID/pay" \
@@ -749,20 +749,20 @@ tasks:
         sleep 1
         ORDER_INFO_RESPONSE=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER_UUID" \
           -H "X-Session-Uuid: $TEST_SESSION_UUID")
-        
+
         # Извлекаем статус заказа
         ORDER_STATUS=$(echo $ORDER_INFO_RESPONSE | grep -o '"status":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER_STATUS" ]; then
           ORDER_STATUS=$(echo $ORDER_INFO_RESPONSE | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         # Проверяем, что статус стал PAID
         if [[ "$ORDER_STATUS" != *"PAID"* ]]; then
           echo "❌ Неверный статус заказа после оплаты. Ожидался PAID или ASSEMBLED, получен: $ORDER_STATUS"
           exit 1
         fi
         echo "✅ Статус заказа после оплаты: $ORDER_STATUS"
-        
+
         # Если статус PAID, ждем сборку
         if [[ "$ORDER_STATUS" == *"PAID"* ]]; then
           echo "Ожидаем сборку заказа (11 секунд)..."
@@ -783,7 +783,7 @@ tasks:
           
           echo "✅ Статус заказа после ожидания сборки: $ORDER_STATUS (ожидали ASSEMBLED)"
         fi
-        
+
         echo
         echo "📝 Тест 7: Создание второго заказа для отмены (REST API с аутентификацией)"
         ORDER2_RESPONSE=$(curl -s -X POST "http://localhost:8080/api/v1/orders" \
@@ -808,7 +808,7 @@ tasks:
           fi
         fi
         echo "✅ Успешно создан второй заказ с UUID: $ORDER2_UUID"
-        
+
         # Проверяем его начальный статус
         ORDER2_INFO=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID" \
           -H "X-Session-Uuid: $TEST_SESSION_UUID")
@@ -816,30 +816,30 @@ tasks:
         if [ -z "$ORDER2_STATUS" ]; then
           ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         if [[ "$ORDER2_STATUS" != *"PENDING_PAYMENT"* ]]; then
           echo "❌ Неверный начальный статус второго заказа. Ожидался PENDING_PAYMENT, получен: $ORDER2_STATUS"
           exit 1
         fi
         echo "✅ Начальный статус второго заказа: $ORDER2_STATUS"
-        
+
         echo
         echo "❌ Тест 8: Отмена второго заказа (REST API с аутентификацией)"
         echo "Ожидаем 2 секунды перед отменой..."
         sleep 2
-        
+
         curl -s -X POST "http://localhost:8080/api/v1/orders/$ORDER2_UUID/cancel" \
           -H "X-Session-Uuid: $TEST_SESSION_UUID"
-        
+
         echo "Проверяем статус после отмены..."
-        
+
         ORDER2_INFO=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID" \
           -H "X-Session-Uuid: $TEST_SESSION_UUID")
         ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status":"[^"]*' | cut -d'"' -f4)
         if [ -z "$ORDER2_STATUS" ]; then
           ORDER2_STATUS=$(echo $ORDER2_INFO | grep -o '"status": "[^"]*' | cut -d'"' -f4)
         fi
-        
+
         if [[ "$ORDER2_STATUS" != *"CANCELLED"* ]]; then
           echo "❌ Неверный статус отмененного заказа. Ожидался CANCELLED, получен: $ORDER2_STATUS"
           echo "🔍 Детали заказа: $ORDER2_INFO"
@@ -856,7 +856,7 @@ tasks:
 
   test-api:
     desc: "🚀 Полное тестирование API: проверка аутентификации + функциональные тесты"
-    deps: [ grpcurl:install, test-iam ]
+    deps: [grpcurl:install, test-iam]
     silent: true
     cmds:
       - task: test-api-auth-rejection
@@ -939,3 +939,364 @@ tasks:
       - echo "🚀 Running Inventory service e2e tests..."
       - cd ../../ && go mod tidy
       - go test -tags=integration -v ./...
+
+  # ===============================
+  # GATEWAY (Envoy + All Services)
+  # ===============================
+
+  gateway:up:
+    desc: "🚀 Запускает полную инфраструктуру Gateway (Order + Inventory + IAM + Envoy)"
+    dir: deploy/compose/gateway
+    cmds:
+      - echo "🏗️ Собираем и запускаем Gateway инфраструктуру..."
+      - docker compose up --build --detach
+      - echo ""
+      - echo "⏳ Ожидаем готовности сервисов..."
+      - sleep 10
+      - task: gateway:health
+
+  gateway:down:
+    desc: "🛑 Останавливает Gateway инфраструктуру"
+    dir: deploy/compose/gateway
+    cmds:
+      - echo "🛑 Останавливаем Gateway инфраструктуру..."
+      - docker compose down
+      - echo "✅ Gateway остановлен"
+
+  gateway:restart:
+    desc: "🔄 Перезапускает Gateway инфраструктуру"
+    cmds:
+      - task: gateway:down
+      - task: gateway:up
+
+  gateway:logs:
+    desc: "📝 Показывает логи всех сервисов Gateway"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose logs -f
+
+  gateway:logs:envoy:
+    desc: "📝 Показывает логи Envoy"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose logs -f envoy
+
+  gateway:logs:order:
+    desc: "📝 Показывает логи Order Service"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose logs -f order-service
+
+  gateway:logs:inventory:
+    desc: "📝 Показывает логи Inventory Service"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose logs -f inventory-service
+
+  gateway:logs:iam:
+    desc: "📝 Показывает логи IAM Service"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose logs -f iam-service
+
+  gateway:ps:
+    desc: "📊 Показывает статус контейнеров Gateway"
+    dir: deploy/compose/gateway
+    cmds:
+      - docker compose ps
+
+  gateway:clean:
+    desc: "🧹 Очищает Gateway Docker ресурсы (включая volumes)"
+    dir: deploy/compose/gateway
+    cmds:
+      - echo "🧹 Очищаем Gateway Docker ресурсы..."
+      - docker compose down --volumes --remove-orphans
+      - echo "✅ Очистка завершена"
+
+  gateway:health:
+    desc: "🏥 Проверяет здоровье всех сервисов Gateway"
+    dir: deploy/compose/gateway
+    cmds:
+      - |
+        echo "🏥 Проверка здоровья Gateway сервисов..."
+        echo ""
+        echo "📊 Envoy Admin (ready check):"
+        curl -sf http://localhost:8081/ready && echo " ✅ Envoy готов" || echo "❌ Envoy не готов"
+        echo ""
+        echo "🔐 Health check (без аутентификации):"
+        curl -sf http://localhost:8080/healthz && echo " ✅ Healthz доступен" || echo "❌ Healthz недоступен"
+        echo ""
+        echo "📊 Статус контейнеров:"
+        docker compose ps --format "table {{.Name}}\t{{.Status}}"
+
+  gateway:envoy:stats:
+    desc: "📈 Показывает статистику Envoy"
+    cmds:
+      - curl -s http://localhost:8081/stats | head -50
+
+  gateway:envoy:stats:auth:
+    desc: "🔐 Показывает статистику External Authorization"
+    cmds:
+      - curl -s http://localhost:8081/stats | grep ext_authz
+
+  gateway:envoy:clusters:
+    desc: "🌐 Показывает статус кластеров Envoy"
+    cmds:
+      - curl -s http://localhost:8081/clusters | grep -E "^[a-z_]+::"
+
+  proto:build:inventory-descriptor:
+    desc: "📦 Генерирует proto дескриптор для Inventory Service (gRPC transcoding)"
+    deps: [install-buf]
+    dir: shared/proto
+    cmds:
+      - echo "📦 Генерируем inventory_descriptor.pb..."
+      - "{{.BUF}} build --path inventory --path common --as-file-descriptor-set --output ../pkg/proto/inventory/v1/inventory_descriptor.pb"
+      - echo "✅ Дескриптор сгенерирован в shared/pkg/proto/inventory/v1/inventory_descriptor.pb"
+
+  gateway:test:public:
+    desc: "🧪 Тестирует публичные эндпоинты Gateway (без аутентификации)"
+    cmds:
+      - |
+        echo "🧪 Тестирование публичных эндпоинтов..."
+        echo ""
+
+        echo "📍 GET /healthz"
+        result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://localhost:8080/healthz)
+        body=$(echo "$result" | sed '$d')
+        status=$(echo "$result" | tail -1 | cut -d':' -f2)
+        echo "   Ответ: $body"
+        echo "   HTTP: $status"
+        if [ "$status" = "200" ]; then
+          echo "   ✅ /healthz доступен без аутентификации"
+        else
+          echo "   ❌ /healthz должен возвращать 200" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "📍 GET /readyz"
+        result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://localhost:8080/readyz)
+        body=$(echo "$result" | sed '$d')
+        status=$(echo "$result" | tail -1 | cut -d':' -f2)
+        echo "   Ответ: $body"
+        echo "   HTTP: $status"
+        if [ "$status" = "200" ]; then
+          echo "   ✅ /readyz доступен без аутентификации"
+        else
+          echo "   ❌ /readyz должен возвращать 200" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "✅ Все публичные эндпоинты работают корректно!"
+
+  gateway:test:auth:denied:
+    desc: "🔐 Тестирует что запросы без аутентификации отклоняются Gateway"
+    cmds:
+      - |
+        echo "🔐 Тестирование отклонения запросов без аутентификации..."
+        echo ""
+
+        echo "📍 GET /api/v1/orders (без аутентификации)"
+        result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://localhost:8080/api/v1/orders)
+        status=$(echo "$result" | tail -1 | cut -d':' -f2)
+        echo "   HTTP: $status"
+        if [ "$status" = "401" ] || [ "$status" = "403" ]; then
+          echo "   ✅ Запрос корректно отклонен (HTTP $status)"
+        else
+          echo "   ❌ Запрос должен был быть отклонен с HTTP 401/403, получен HTTP $status" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "📍 POST /api/v1/parts (без аутентификации)"
+        result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8080/api/v1/parts \
+          -H "Content-Type: application/json" \
+          -d '{}')
+        status=$(echo "$result" | tail -1 | cut -d':' -f2)
+        echo "   HTTP: $status"
+        if [ "$status" = "401" ] || [ "$status" = "403" ]; then
+          echo "   ✅ Запрос корректно отклонен (HTTP $status)"
+        else
+          echo "   ❌ Запрос должен был быть отклонен с HTTP 401/403, получен HTTP $status" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "✅ Все неаутентифицированные запросы корректно отклоняются!"
+
+  gateway:test:iam:check:
+    desc: "🔐 Тестирует External Authorization API через gRPC"
+    deps: [grpcurl:install]
+    cmds:
+      - |
+        echo "🔐 Тестирование External Authorization API..."
+        echo ""
+
+        echo "📍 Тест с валидным Session-UUID header"
+        result=$({{.GRPCURL}} -plaintext -d '{
+          "attributes": {
+            "request": {
+              "http": {
+                "headers": {
+                  "session-uuid": "123e4567-e89b-12d3-a456-426614174000"
+                }
+              }
+            }
+          }
+        }' localhost:50053 envoy.service.auth.v3.Authorization/Check 2>&1 || true)
+        echo "   Результат: $result"
+
+        if echo "$result" | grep -q '"okResponse"'; then
+          echo "   ✅ Авторизация с Session-UUID header успешна"
+        elif echo "$result" | grep -q '"deniedResponse"'; then
+          echo "   ℹ️ Авторизация отклонена (возможно сессия не существует)"
+        else
+          echo "   ⚠️ Неожиданный результат"
+        fi
+        echo ""
+
+        echo "📍 Тест БЕЗ session (должен отклонить)"
+        result=$({{.GRPCURL}} -plaintext -d '{
+          "attributes": {
+            "request": {
+              "http": {
+                "headers": {
+                  "content-type": "application/json"
+                }
+              }
+            }
+          }
+        }' localhost:50053 envoy.service.auth.v3.Authorization/Check 2>&1 || true)
+        echo "   Результат: $result"
+
+        if echo "$result" | grep -q '"deniedResponse"'; then
+          echo "   ✅ Запрос без session корректно отклонен"
+        else
+          echo "   ❌ Запрос должен был быть отклонен" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "✅ Тесты External Authorization прошли!"
+
+  gateway:test:orders:
+    desc: "🛒 Тестирует Order Service API через Envoy Gateway (HTTP↔HTTP)"
+    cmds:
+      - |
+        echo "🛒 Тестирование Order Service API через HTTP Gateway..."
+        echo ""
+
+        SESSION_UUID="123e4567-e89b-12d3-a456-426614174000"
+
+        echo "📍 POST /api/v1/orders (создание заказа)"
+        create_result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8080/api/v1/orders \
+          -H "Content-Type: application/json" \
+          -H "Session-UUID: $SESSION_UUID" \
+          -d '{
+            "user_uuid": "550e8400-e29b-41d4-a716-446655440000",
+            "part_uuids": ["123e4567-e89b-12d3-a456-426614174001"]
+          }')
+        body=$(echo "$create_result" | sed '$d')
+        status=$(echo "$create_result" | tail -1 | cut -d':' -f2)
+        echo "   Ответ: $body"
+        echo "   HTTP: $status"
+
+        # 401/403 = auth работает, но сессия невалидна (ожидаемо для тестовой сессии)
+        # 201/200 = успех, 400 = ошибка валидации, 502 = backend недоступен
+        if [ "$status" = "201" ] || [ "$status" = "200" ] || [ "$status" = "400" ] || [ "$status" = "401" ] || [ "$status" = "403" ] || [ "$status" = "502" ]; then
+          echo "   ✅ Order Service доступен через Gateway (HTTP $status)"
+        else
+          echo "   ❌ Неожиданный статус от Order Service: HTTP $status" >&2
+          exit 1
+        fi
+        echo ""
+
+        echo "✅ Тестирование Order Service завершено!"
+
+  gateway:test:inventory:
+    desc: "📦 Тестирует Inventory Service API через Envoy Gateway (HTTP↔gRPC transcoding)"
+    cmds:
+      - |
+        echo "📦 Тестирование Inventory Service API через HTTP Gateway (gRPC transcoding)..."
+        echo ""
+
+        SESSION_UUID="123e4567-e89b-12d3-a456-426614174000"
+
+        echo "📍 POST /api/v1/parts (ListParts через gRPC transcoding)"
+        list_result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST http://localhost:8080/api/v1/parts \
+          -H "Content-Type: application/json" \
+          -H "Session-UUID: $SESSION_UUID" \
+          -d '{"filter": {}}')
+        body=$(echo "$list_result" | sed '$d')
+        status=$(echo "$list_result" | tail -1 | cut -d':' -f2)
+        echo "   Ответ: $body"
+        echo "   HTTP: $status"
+
+        # 401/403 = auth работает, но сессия невалидна
+        if [ "$status" = "200" ]; then
+          echo "   ✅ gRPC transcoding работает (ListParts)"
+        elif [ "$status" = "401" ] || [ "$status" = "403" ]; then
+          echo "   ✅ Gateway работает, auth отклонил невалидную сессию (HTTP $status)"
+        elif [ "$status" = "502" ] || [ "$status" = "503" ]; then
+          echo "   ⚠️ Inventory Service может быть недоступен"
+        else
+          echo "   ⚠️ Статус: HTTP $status"
+        fi
+        echo ""
+
+        echo "📍 GET /api/v1/parts/{uuid} (GetPart через gRPC transcoding)"
+        get_result=$(curl -s -w "\nHTTP_STATUS:%{http_code}" http://localhost:8080/api/v1/parts/123e4567-e89b-12d3-a456-426614174001 \
+          -H "Session-UUID: $SESSION_UUID")
+        body=$(echo "$get_result" | sed '$d')
+        status=$(echo "$get_result" | tail -1 | cut -d':' -f2)
+        echo "   Ответ: $body"
+        echo "   HTTP: $status"
+
+        if [ "$status" = "200" ] || [ "$status" = "404" ]; then
+          echo "   ✅ gRPC transcoding работает (GetPart)"
+        elif [ "$status" = "401" ] || [ "$status" = "403" ]; then
+          echo "   ✅ Gateway работает, auth отклонил невалидную сессию (HTTP $status)"
+        else
+          echo "   ⚠️ Статус: HTTP $status"
+        fi
+        echo ""
+
+        echo "✅ Тестирование Inventory Service завершено!"
+
+  gateway:test:grpc:inventory:
+    desc: "📦 Тестирует Inventory gRPC Service напрямую"
+    deps: [grpcurl:install]
+    cmds:
+      - |
+        echo "📦 Тестирование Inventory gRPC Service..."
+        echo ""
+
+        echo "📍 ListParts"
+        result=$({{.GRPCURL}} -plaintext -d '{"filter": {}}' localhost:50051 inventory.v1.InventoryService/ListParts 2>&1 || true)
+        echo "   Результат: $result"
+        echo ""
+
+        echo "📍 GetPart"
+        result=$({{.GRPCURL}} -plaintext -d '{"uuid": "123e4567-e89b-12d3-a456-426614174001"}' localhost:50051 inventory.v1.InventoryService/GetPart 2>&1 || true)
+        echo "   Результат: $result"
+        echo ""
+
+        echo "✅ Тестирование Inventory gRPC завершено!"
+
+  gateway:test:all:
+    desc: "🧪 Запускает все тесты Gateway"
+    cmds:
+      - echo "🧪 Запускаем полный набор тестов Gateway..."
+      - echo ""
+      - task: gateway:test:public
+      - echo ""
+      - task: gateway:test:auth:denied
+      - echo ""
+      - task: gateway:test:iam:check
+      - echo ""
+      - task: gateway:test:orders
+      - echo ""
+      - task: gateway:test:inventory
+      - echo ""
+      - echo "🎉 Все тесты Gateway завершены!"

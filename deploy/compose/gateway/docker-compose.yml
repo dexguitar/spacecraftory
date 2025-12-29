@@ -1,0 +1,419 @@
+# ===============================
+# DOCKER COMPOSE ДЛЯ ENVOY GATEWAY
+# Единый вход в систему через Envoy Proxy
+# ===============================
+#
+# Архитектура:
+# HTTP Client → Envoy:8080 → ext_authz → IAM:50053
+#                    ↓
+#         ┌─────────┴─────────┐
+#         ↓                   ↓
+#   Order:8080           Inventory:50051
+#   (HTTP↔HTTP)          (HTTP↔gRPC)
+#
+# Запуск:
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml up --build
+#
+# ВАЖНО: Перед запуском этого compose нужно запустить базы данных:
+#   docker-compose -f deploy/compose/iam/docker-compose.yml up -d
+#   docker-compose -f deploy/compose/order/docker-compose.yml up -d
+#   docker-compose -f deploy/compose/inventory/docker-compose.yml up -d
+#   docker network create microservices-net (если не создана)
+#
+# ===============================
+
+services:
+  # ===============================
+  # ORDER SERVICE (HTTP)
+  # ===============================
+  order-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/order/Dockerfile
+    container_name: order-service
+
+    environment:
+      # HTTP server settings
+      - ORDER_HTTP_HOST=0.0.0.0
+      - ORDER_HTTP_PORT=8080
+      - ORDER_HTTP_READ_TIMEOUT=5s
+      # Logger
+      - ORDER_LOGGER_LEVEL=info
+      - ORDER_LOGGER_AS_JSON=true
+      - ORDER_OTEL_COLLECTOR_ENDPOINT=
+      - ORDER_SERVICE_NAME=order-service
+      # Postgres (подключаемся к контейнеру postgres-order через общую сеть)
+      - ORDER_POSTGRES_HOST=postgres-order
+      - ORDER_POSTGRES_PORT=5432
+      - ORDER_EXTERNAL_POSTGRES_PORT=5432
+      - ORDER_POSTGRES_USER=order-service-user
+      - ORDER_POSTGRES_PASSWORD=order-service-password
+      - ORDER_POSTGRES_DB=order-service
+      - ORDER_POSTGRES_SSL_MODE=disable
+      - ORDER_POSTGRES_MIGRATION_DIRECTORY=./order/migrations
+      # gRPC clients
+      - ORDER_INVENTORY_GRPC_HOST=inventory-service
+      - ORDER_INVENTORY_GRPC_PORT=50051
+      - ORDER_PAYMENT_GRPC_HOST=payment-service
+      - ORDER_PAYMENT_GRPC_PORT=50052
+      - ORDER_IAM_GRPC_HOST=iam-service
+      - ORDER_IAM_GRPC_PORT=50053
+      # Kafka
+      - ORDER_KAFKA_BROKERS=kafka:9092
+      - ORDER_PAID_TOPIC_NAME=order-paid
+      - ORDER_ASSEMBLED_TOPIC_NAME=order-assembled
+      - ORDER_ASSEMBLED_CONSUMER_GROUP_ID=order-assembled-consumer
+      # Telemetry (disabled)
+      - ORDER_METRICS_COLLECTOR_INTERVAL=
+      - ORDER_ENVIRONMENT=
+      - ORDER_SERVICE_VERSION=
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/orders | grep -qE '^(2|4)[0-9]{2}$'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # POSTGRES FOR ORDER SERVICE
+  # ===============================
+  postgres-order:
+    image: postgres:17.0-alpine3.20
+    container_name: postgres-order
+
+    environment:
+      - POSTGRES_USER=order-service-user
+      - POSTGRES_PASSWORD=order-service-password
+      - POSTGRES_DB=order-service
+
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order-service-user -d order-service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # INVENTORY SERVICE (gRPC)
+  # ===============================
+  inventory-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/inventory/Dockerfile
+    container_name: inventory-service
+
+    environment:
+      # gRPC server settings
+      - INVENTORY_GRPC_HOST=0.0.0.0
+      - INVENTORY_GRPC_PORT=50051
+      # IAM client
+      - IAM_CLIENT_GRPC_HOST=iam-service
+      - IAM_CLIENT_GRPC_PORT=50053
+      # Logger
+      - INVENTORY_LOGGER_LEVEL=info
+      - INVENTORY_LOGGER_AS_JSON=true
+      - INVENTORY_OTEL_COLLECTOR_ENDPOINT=
+      - INVENTORY_SERVICE_NAME=inventory-service
+      # MongoDB
+      - INVENTORY_MONGO_HOST=mongo-inventory
+      - INVENTORY_MONGO_PORT=27017
+      - INVENTORY_MONGO_INITDB_DATABASE=inventory-service
+      - INVENTORY_MONGO_AUTH_DB=admin
+      - INVENTORY_MONGO_INITDB_ROOT_USERNAME=inventory-service-user
+      - INVENTORY_MONGO_INITDB_ROOT_PASSWORD=inventory-service-password
+
+    ports:
+      - "50051:50051"
+
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 50051 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    depends_on:
+      - mongo-inventory
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # MONGODB FOR INVENTORY SERVICE
+  # ===============================
+  mongo-inventory:
+    image: mongo:7.0.5
+    container_name: mongo-inventory
+
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=inventory-service-user
+      - MONGO_INITDB_ROOT_PASSWORD=inventory-service-password
+      - MONGO_INITDB_DATABASE=inventory-service
+
+    volumes:
+      - mongo_inventory_data:/data/db
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "echo 'db.runCommand({ ping: 1 }).ok' | mongosh --quiet -u inventory-service-user -p inventory-service-password --authenticationDatabase admin",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # IAM SERVICE (gRPC + ext_authz)
+  # ===============================
+  iam-service:
+    build:
+      context: ../../..
+      dockerfile: deploy/docker/iam/Dockerfile
+    container_name: iam-service
+
+    environment:
+      # gRPC server settings
+      - IAM_GRPC_HOST=0.0.0.0
+      - IAM_GRPC_PORT=50053
+      # Logger
+      - IAM_LOGGER_LEVEL=info
+      - IAM_LOGGER_AS_JSON=true
+      - IAM_OTEL_COLLECTOR_ENDPOINT=
+      - IAM_SERVICE_NAME=iam-service
+      # Postgres
+      - IAM_POSTGRES_HOST=postgres-iam
+      - IAM_EXTERNAL_POSTGRES_PORT=5432
+      - IAM_POSTGRES_USER=iam-service-user
+      - IAM_POSTGRES_PASSWORD=iam-service-password
+      - IAM_POSTGRES_DB=iam-service
+      - IAM_POSTGRES_SSL_MODE=disable
+      - IAM_POSTGRES_MIGRATION_DIRECTORY=./iam/migrations
+      # Redis
+      - IAM_REDIS_HOST=redis-iam
+      - IAM_REDIS_PORT=6379
+      - IAM_REDIS_CONNECTION_TIMEOUT=10s
+      - IAM_REDIS_MAX_IDLE=10
+      - IAM_REDIS_IDLE_TIMEOUT=10s
+      - IAM_REDIS_CACHE_TTL=24h
+
+    ports:
+      - "50053:50053"
+
+    healthcheck:
+      test: ["CMD", "/bin/grpc-health-probe", "-addr=localhost:50053"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    depends_on:
+      - postgres-iam
+      - redis-iam
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # POSTGRES FOR IAM SERVICE
+  # ===============================
+  postgres-iam:
+    image: postgres:17.0-alpine3.20
+    container_name: postgres-iam
+
+    environment:
+      - POSTGRES_USER=iam-service-user
+      - POSTGRES_PASSWORD=iam-service-password
+      - POSTGRES_DB=iam-service
+
+    volumes:
+      - postgres_iam_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iam-service-user -d iam-service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # REDIS FOR IAM SERVICE
+  # ===============================
+  redis-iam:
+    image: redis:7.2.5-alpine3.20
+    container_name: redis-iam
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+  # ===============================
+  # KAFKA (для Order Service)
+  # ===============================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - gateway-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-broker-api-versions",
+          "--bootstrap-server",
+          "localhost:9092",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - gateway-net
+
+  # ===============================
+  # ENVOY PROXY (API Gateway)
+  # ===============================
+  envoy:
+    image: envoyproxy/envoy:v1.34.0
+    container_name: envoy
+
+    depends_on:
+      order-service:
+        condition: service_healthy
+      inventory-service:
+        condition: service_healthy
+      iam-service:
+        condition: service_healthy
+
+    volumes:
+      - ../../envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - ../../../shared/pkg/proto/inventory/v1/inventory_descriptor.pb:/etc/envoy/inventory_descriptor.pb:ro
+
+    ports:
+      - "${ENVOY_PORT:-8080}:8080" # HTTP API
+      - "${ENVOY_ADMIN_PORT:-8081}:8081" # Envoy Admin
+
+    environment:
+      - ENVOY_UID=0
+
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/8081'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+    restart: unless-stopped
+
+    networks:
+      - gateway-net
+
+volumes:
+  postgres_order_data:
+  postgres_iam_data:
+  mongo_inventory_data:
+
+networks:
+  gateway-net:
+    driver: bridge
+# ===============================
+# КОМАНДЫ:
+# ===============================
+# Запуск:
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml up --build -d
+#
+# Проверка статуса:
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml ps
+#
+# Просмотр логов:
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml logs -f
+#
+# Остановка:
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml down
+#
+# Очистка (с данными):
+#   docker-compose -f deploy/compose/gateway/docker-compose.yml down -v
+#
+# ===============================
+# ТЕСТИРОВАНИЕ:
+# ===============================
+# Health check (без аутентификации):
+#   curl http://localhost:8080/healthz
+#
+# Orders API (требует аутентификации):
+#   curl -H "Session-UUID: your-session-uuid" http://localhost:8080/api/v1/orders
+#
+# Inventory API (требует аутентификации):
+#   curl -H "Session-UUID: your-session-uuid" http://localhost:8080/api/v1/parts
+#
+# Envoy Admin:
+#   curl http://localhost:8081/ready
+#   curl http://localhost:8081/stats
+#   curl http://localhost:8081/config_dump
+
